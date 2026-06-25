@@ -87,6 +87,21 @@
       <button id="tuplet-add">現在位置から連符を設定</button>
       <button id="tuplet-clear">連符を解除</button>
     </div>
+    <div class="draw-row">
+      <span>描画:</span>
+      <select id="draw-type">
+        <option value="line">直線</option>
+        <option value="wave">波線</option>
+        <option value="arrow">矢印</option>
+      </select>
+      <select id="draw-orient">
+        <option value="h">横</option>
+        <option value="v">縦</option>
+      </select>
+      <button id="draw-add">追加</button>
+      <button id="draw-del">選択を削除</button>
+      <span class="hint" style="font-size:0.8em">ドラッグで移動／端のハンドルで長さ変更</span>
+    </div>
     <div id="score" class="score"></div>
   </section>
 </main>
@@ -121,6 +136,7 @@
 <script src="js/tuning.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/staff.js"></script>
+<script src="js/draw.js"></script>
 <script src="js/render.js"></script>
 <script src="js/app.js"></script>
 </body>

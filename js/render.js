@@ -129,6 +129,9 @@ function renderScore(state) {
   // Draw tuplet brackets (needs the cells laid out in the DOM for offsets).
   drawTupletBrackets(root);
 
+  // Overlay free-form drawings (lines / waves / arrows).
+  if (typeof renderDrawings === 'function') renderDrawings(sys, state);
+
   // attach click handlers for cell selection
   root.querySelectorAll('.cell').forEach(el => {
     el.addEventListener('click', () => {

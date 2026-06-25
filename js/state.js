@@ -94,7 +94,10 @@ const State = {
     // Ordered list of tuning sections. The first (fromMeasure 0) is the base
     // tuning; later entries override it from their measure onward.
     tunings: [{ fromMeasure: 0, tuning: defaultTuning13() }],
-    measures: []
+    measures: [],
+    // Free-form drawings overlaid on the score (straight / wavy / arrow),
+    // constrained to horizontal or vertical. Coords are px within the system.
+    drawings: []
   },
   cursor: { measure: 0, cell: 0 },
 
@@ -236,6 +239,18 @@ const State = {
     }
   },
 
+  /* Drawings ---------------------------------------------------------- */
+  addDrawing(type, orient) {
+    if (!this.sheet.drawings) this.sheet.drawings = [];
+    this.sheet.drawings.push({ type, orient, x: 24, y: 24, length: 120 });
+    return this.sheet.drawings.length - 1;
+  },
+  removeDrawing(idx) {
+    if (this.sheet.drawings && idx >= 0 && idx < this.sheet.drawings.length) {
+      this.sheet.drawings.splice(idx, 1);
+    }
+  },
+
   // If the cursor sits on a tuplet slot, advance to the next slot, or out of
   // the tuplet after the last slot. Returns true if it handled the advance.
   advanceTupletSlot() {
@@ -311,6 +326,7 @@ const State = {
           obj.tunings = [{ fromMeasure: 0, tuning: obj.tuning }];
           delete obj.tuning;
         }
+        if (!obj.drawings) obj.drawings = [];
         this.sheet = obj;
         this.cursor = {measure: 0, cell: 0};
         return true;

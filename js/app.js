@@ -331,6 +331,32 @@ document.addEventListener('DOMContentLoaded', () => {
     State.clearTupletAtCursor();
     refresh();
   });
+
+  document.getElementById('draw-add').addEventListener('click', () => {
+    History.push();
+    const type = document.getElementById('draw-type').value;
+    const orient = document.getElementById('draw-orient').value;
+    selectedDrawingIdx = State.addDrawing(type, orient);
+    refresh();
+  });
+  document.getElementById('draw-del').addEventListener('click', () => {
+    if (selectedDrawingIdx < 0) return;
+    History.push();
+    State.removeDrawing(selectedDrawingIdx);
+    selectedDrawingIdx = -1;
+    refresh();
+  });
+  // Delete key removes the selected drawing (when not typing in a field)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (selectedDrawingIdx < 0) return;
+    e.preventDefault();
+    History.push();
+    State.removeDrawing(selectedDrawingIdx);
+    selectedDrawingIdx = -1;
+    refresh();
+  });
   document.getElementById('add-measure').addEventListener('click', () => {
     History.push();
     State.addMeasure();

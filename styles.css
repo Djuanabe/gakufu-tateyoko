@@ -86,6 +86,7 @@ body {
   border: 2px solid #222;
   background: #fffef7;
   align-self: start;
+  position: relative;   /* positioning context for the drawing overlay */
 }
 
 /* One measure = one vertical column. */
@@ -255,12 +256,36 @@ body {
   padding: 0 1px;
 }
 
-.tuplet-row {
+.tuplet-row, .draw-row {
   display: flex;
   gap: 0.4em;
   align-items: center;
   font-size: 0.9em;
   margin-top: 0.3em;
+  flex-wrap: wrap;
+}
+
+/* Drawing overlay (lines / waves / arrows) on top of the score system. */
+.draw-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;  /* only the drawings themselves are interactive */
+  z-index: 8;
+}
+.drawing {
+  position: absolute;
+  pointer-events: auto;
+  cursor: move;
+}
+.drawing.selected { outline: 1px dashed #c98a14; }
+.draw-handle {
+  position: absolute;
+  width: 9px; height: 9px;
+  background: #c98a14;
+  border: 1px solid #7a5400;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
 }
 
 /* Tuning-change marker on a measure column */
