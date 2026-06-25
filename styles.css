@@ -40,7 +40,7 @@ body {
 }
 .staff-panel h2 { font-size: 1em; margin: 0 0 0.4em; }
 .staff-controls { display: flex; gap: 0.6em; font-size: 0.85em; margin-bottom: 0.3em; }
-#staff-svg { width: 100%; height: auto; background: #fffef7; border: 1px solid #ddd; }
+#staff-svg, #tuning-staff-svg { width: 100%; height: auto; background: #fffef7; border: 1px solid #ddd; }
 .hint { font-size: 0.75em; color: #555; line-height: 1.4; margin-top: 0.4em; }
 
 .editor-panel {

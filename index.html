@@ -125,6 +125,28 @@
       <button id="tuning-staff-apply">決定（低い順に割当）</button>
       <span id="tuning-staff-count"></span>
     </div>
+    <div class="staff-controls">
+      <label>調号:
+        <select id="tuning-key-sig">
+          <option value="0">なし (C)</option>
+          <option value="-1">♭1 (F)</option>
+          <option value="-2">♭2 (B♭)</option>
+          <option value="-3">♭3 (E♭)</option>
+          <option value="-4">♭4 (A♭)</option>
+          <option value="-5">♭5 (D♭)</option>
+          <option value="-6">♭6 (G♭)</option>
+          <option value="-7">♭7 (C♭)</option>
+        </select>
+      </label>
+      <label>音部記号:
+        <select id="tuning-clef">
+          <option value="treble">ト音</option>
+          <option value="bass">ヘ音</option>
+        </select>
+      </label>
+      <span class="hint" style="font-size:0.8em">クリック / 矢印キーで音符を選び、Enter または「選択追加」で追加</span>
+    </div>
+    <svg id="tuning-staff-svg" viewBox="0 0 660 220" preserveAspectRatio="xMidYMid meet"></svg>
     <table id="tuning-table"></table>
     <div class="modal-actions">
       <button id="tuning-close">閉じる</button>

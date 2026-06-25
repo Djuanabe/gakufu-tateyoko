@@ -115,11 +115,16 @@ function drawStaffRow(svg, rowTop, clef, flats) {
   return kx; // x after the key signature
 }
 
-function renderStaff() {
-  const svg = document.getElementById('staff-svg');
+function renderStaff(opts) {
+  const o = opts || {};
+  const svgId = o.svgId || 'staff-svg';
+  const clefId = o.clefId || 'clef';
+  const keyId = o.keyId || 'key-sig';
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
   svg.innerHTML = '';
-  const clef = document.getElementById('clef').value;
-  const keySig = parseInt(document.getElementById('key-sig').value, 10) || 0;
+  const clef = document.getElementById(clefId).value;
+  const keySig = parseInt(document.getElementById(keyId).value, 10) || 0;
   const flats = flatAccidentalsFor(keySig);
 
   // Figure out how many notes fit per row (so we can wrap to a 2nd row).

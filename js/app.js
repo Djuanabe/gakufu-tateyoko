@@ -141,6 +141,13 @@ function openTuningModal() {
   buildTuningSections();
   buildTuningTable();
   document.getElementById('tuning-modal').classList.remove('hidden');
+  // Render the modal's own sample staff (takes over the shared staff selection
+  // state while open; the main staff is re-rendered when the modal closes).
+  renderTuningStaff();
+}
+
+function renderTuningStaff() {
+  renderStaff({ svgId: 'tuning-staff-svg', clefId: 'tuning-clef', keyId: 'tuning-key-sig' });
 }
 
 /* Staff-based tuning entry: pick notes on the sample staff, then 決定 assigns
@@ -396,8 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('open-tuning').addEventListener('click', openTuningModal);
   document.getElementById('tuning-close').addEventListener('click', () => {
     document.getElementById('tuning-modal').classList.add('hidden');
+    renderStaff(); // restore the main-panel staff + its selection state
     refresh();
   });
+  document.getElementById('tuning-clef').addEventListener('change', renderTuningStaff);
+  document.getElementById('tuning-key-sig').addEventListener('change', renderTuningStaff);
   document.getElementById('tuning-section').addEventListener('change', (e) => {
     editingTuningFrom = parseInt(e.target.value, 10) || 0;
     buildTuningSections();
@@ -441,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); moveStaffSel(+1); }
     else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); moveStaffSel(-1); }
+    else if (e.key === 'Enter') { e.preventDefault(); addTuningPick(selectedStaffToken()); }
   });
 
   document.getElementById('save').addEventListener('click', () => {
