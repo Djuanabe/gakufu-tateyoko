@@ -33,7 +33,7 @@ function toKatakana(s) {
   return s.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
 }
 
-const SEP_RE = /[,、 　]+/; // comma, 読点, half/full-width space (all = separators)
+const SEP_RE = /[,、]+/; // chord/symbol separators: comma and 読点 only (no space)
 
 function parseCellInput(text) {
   const t = (text || '').trim();

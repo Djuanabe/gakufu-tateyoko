@@ -58,7 +58,7 @@ function line(svg, x1, y1, x2, y2, color, w) {
 // Range of diatonic steps shown, extended by one octave (7 steps) up and down.
 const STAFF_LOW_STEP = -9;
 const STAFF_HIGH_STEP = 17;
-const STAFF_ROW_GAP = 210; // vertical distance between stacked staff rows (room for labels)
+const STAFF_ROW_GAP = 260; // vertical distance between stacked staff rows (room for labels)
 
 // Keyboard selection of a staff note (moved with arrow keys).
 let staffNotes = [];  // {token, octave, midi, head} in ascending pitch order

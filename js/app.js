@@ -113,16 +113,8 @@ const History = {
  *   - else -> move the cursor back one cell
  * So one Backspace steps back onto the last note, the next clears it. */
 function handleBackspace() {
-  const cell = State.currentCell();
-  const hasContent = cell && (
-    (cell.notes && cell.notes.length > 0) || cell.rest || cell.sustain || cell.unconverted
-  );
-  History.push();
-  if (hasContent) {
-    State.clearCurrentCell();
-  } else {
-    State.retreatHalfBeat();
-  }
+  // Backspace always steps back half a beat.
+  State.retreatHalfBeat();
   refresh();
 }
 
