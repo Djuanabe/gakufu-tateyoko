@@ -102,8 +102,7 @@ body {
 
 .cell {
   flex: 0 0 auto;
-  height: 28px;
-  border-bottom: 1px solid #ccc;
+  height: 40px;            /* default; overridden inline per 8th/16th */
   position: relative;
   cursor: pointer;
   padding: 1px;
@@ -114,7 +113,6 @@ body {
   line-height: 1.0;
   overflow: hidden;
 }
-.cell:last-child { border-bottom: none; }
 .cell.active { background: #ffe7a8; outline: 2px solid #c98a14; }
 .cell.unconverted { background: #ffe1e1; }
 
@@ -178,9 +176,34 @@ body {
 .cell .rest { font-size: 1em; color: #333; }
 .cell .unknown { color: #c0392b; font-size: 0.7em; }
 
-/* Beat divider (heavier) and eighth-note divider (medium) */
+/* Beat divider: full-width heavy line. No sixteenth lines at all. */
 .cell.beat-end { border-bottom: 2px solid #444; }
-.cell.half-end { border-bottom: 1px solid #888; }
+/* Eighth divider: medium line at 3/4 width, centered. */
+.cell.eighth-end::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12.5%;
+  width: 75%;
+  height: 1px;
+  background: #888;
+}
+
+/* Tuplet block: occupies its full beats; bottom is a beat line. */
+.tuplet-block {
+  position: relative;
+  border-bottom: 2px solid #444;
+}
+/* Short tick where the tuplet crosses an internal beat boundary (does not
+   reach across the note names). */
+.tuplet-beat-tick {
+  position: absolute;
+  left: 0;
+  width: 25%;
+  height: 0;
+  border-top: 1px solid #888;
+  pointer-events: none;
+}
 
 /* Tuplet bracket: slur-like curve on the right of the grouped cells. */
 .measure { /* ensure positioning context (already relative) */ }

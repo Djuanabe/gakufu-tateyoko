@@ -16,6 +16,16 @@
 const REST_GLYPH = { quarter: '○', eighth: '△' };
 const LEFT_MARK_GLYPH = { 'wo': 'ヲ', 'o': 'オ' };
 
+// Display sizes. Data is stored as sixteenth cells, but a sixteenth is only
+// shown at half size where it's actually used (via Space); otherwise an
+// eighth (= 2 sixteenths) is drawn at full size.
+const H8 = 40;        // eighth-note cell height (px)
+const H16 = H8 / 2;   // sixteenth-note cell height (px)
+
+function cellHasContent(c) {
+  return !!(c && ((c.notes && c.notes.length > 0) || c.rest || c.sustain || c.unconverted));
+}
+
 function renderScore(state) {
   const root = document.getElementById('score');
   root.innerHTML = '';
@@ -29,8 +39,9 @@ function renderScore(state) {
     mEl.dataset.measure = mIdx;
 
     const ts = m.timeSignature;
-    const perBeat = Math.max(1, Math.round(16 / ts.den));   // sixteenth cells per beat (4/4 -> 4)
-    const perHalf = Math.max(1, Math.round(perBeat / 2));   // eighth boundary (4/4 -> 2)
+    const perBeat = Math.max(1, Math.round(16 / ts.den));        // sixteenth cells per beat (4/4 -> 4)
+    const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2)); // 4/4 -> 2
+    const beatH = eighthsPerBeat * H8;
 
     // mark a tuning change that begins at this measure
     if (state.sheet.tunings &&
@@ -42,23 +53,76 @@ function renderScore(state) {
       mEl.appendChild(badge);
     }
 
-    m.cells.forEach((cell, cellIdx) => {
-      const cEl = renderCell(cell, state.sheet.instrumentType);
-      cEl.dataset.measure = mIdx;
-      cEl.dataset.cell = cellIdx;
-      // heavier line at the end of each beat; medium line at each eighth
-      if ((cellIdx + 1) % perBeat === 0) cEl.classList.add('beat-end');
-      else if ((cellIdx + 1) % perHalf === 0) cEl.classList.add('half-end');
-      if (cell.tuplet) {
-        cEl.classList.add('tuplet');
-        cEl.dataset.tupletId = cell.tuplet.id;
-        cEl.dataset.tupletN = cell.tuplet.n;
+    const cursorHere = (idx) => state.cursor.measure === mIdx && state.cursor.cell === idx;
+    const type = state.sheet.instrumentType;
+    const cells = m.cells;
+
+    let i = 0;
+    while (i < cells.length) {
+      const cell = cells[i];
+
+      // ---- Tuplet block (redistributed over its beats) ----
+      if (cell.tuplet && cell.tuplet.pos === 0) {
+        const t = cell.tuplet;
+        const span = t.span;
+        const blockH = t.beats * beatH;
+        const slotH = blockH / t.n;
+        const block = document.createElement('div');
+        block.className = 'tuplet-block';
+        block.style.height = blockH + 'px';
+
+        for (let s = 0; s < t.n; s++) {
+          const idx = i + s;
+          const cEl = renderCell(cells[idx], type);
+          cEl.style.height = slotH + 'px';
+          cEl.classList.add('tuplet');
+          cEl.dataset.measure = mIdx;
+          cEl.dataset.cell = idx;
+          cEl.dataset.tupletId = t.id;
+          cEl.dataset.tupletN = t.n;
+          if (cursorHere(idx)) cEl.classList.add('active');
+          block.appendChild(cEl);
+        }
+        // short ticks where the tuplet crosses an internal beat boundary
+        for (let b = 1; b < t.beats; b++) {
+          const tick = document.createElement('div');
+          tick.className = 'tuplet-beat-tick';
+          tick.style.top = (b * beatH) + 'px';
+          block.appendChild(tick);
+        }
+        mEl.appendChild(block);
+        i += span;
+        continue;
       }
-      if (state.cursor.measure === mIdx && state.cursor.cell === cellIdx) {
-        cEl.classList.add('active');
+
+      // ---- Normal eighth pair (cells i, i+1) ----
+      const next = cells[i + 1];
+      const subdivided = cellHasContent(next) || cursorHere(i + 1);
+      const endsBeat = ((i + 2) % perBeat === 0);
+
+      if (subdivided) {
+        const a = renderCell(cell, type);
+        a.style.height = H16 + 'px';
+        a.dataset.measure = mIdx; a.dataset.cell = i;
+        if (cursorHere(i)) a.classList.add('active');
+        mEl.appendChild(a); // no divider line under the first sixteenth
+
+        const b = renderCell(next || newCell(), type);
+        b.style.height = H16 + 'px';
+        b.dataset.measure = mIdx; b.dataset.cell = i + 1;
+        b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+        if (cursorHere(i + 1)) b.classList.add('active');
+        mEl.appendChild(b);
+      } else {
+        const a = renderCell(cell, type);
+        a.style.height = H8 + 'px';
+        a.dataset.measure = mIdx; a.dataset.cell = i;
+        a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+        if (cursorHere(i)) a.classList.add('active');
+        mEl.appendChild(a);
       }
-      mEl.appendChild(cEl);
-    });
+      i += 2;
+    }
     sys.appendChild(mEl);
   });
 
@@ -92,7 +156,7 @@ function renderScore(state) {
     }
     // vertical: keep the active cell within the viewport height
     if (r.top < sr.top || r.bottom > sr.bottom) {
-      root.scrollTop = active.offsetTop - root.clientHeight / 2 + active.offsetHeight / 2;
+      root.scrollTop += (r.top - sr.top) - root.clientHeight / 2 + r.height / 2;
     }
   }
 
@@ -116,9 +180,12 @@ function drawTupletBrackets(root) {
       let j = i;
       while (j + 1 < cells.length && cells[j + 1].dataset.tupletId === id) j++;
       const first = cells[i], last = cells[j];
-      const top = first.offsetTop;
-      const bottom = last.offsetTop + last.offsetHeight;
-      const h = bottom - top;
+      // measure offsets via rects (slots live inside a positioned block)
+      const mRect = mEl.getBoundingClientRect();
+      const fRect = first.getBoundingClientRect();
+      const lRect = last.getBoundingClientRect();
+      const top = fRect.top - mRect.top;
+      const h = lRect.bottom - fRect.top;
 
       const W = 16; // bracket width to the right of the column
       const wrap = document.createElement('div');

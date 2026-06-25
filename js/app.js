@@ -34,10 +34,13 @@ function applyInputToCell(text) {
   return 'done';
 }
 
-// Enter: write the cell and advance by the natural duration.
+// Enter: write the cell and advance by the natural duration. Inside a tuplet,
+// advance slot-to-slot instead.
 function commitEnter(text) {
+  const inTuplet = (() => { const c = State.currentCell(); return c && c.tuplet && c.tuplet.pos != null; })();
   const hint = applyInputToCell(text);
   if (hint === 'error') return false;
+  if (inTuplet) { State.advanceTupletSlot(); return true; }
   if (hint === 'empty') State.advanceHalfBeat();
   else if (hint === 'beat') State.advanceBeat();
   else State.advanceHalfBeat();
@@ -45,16 +48,23 @@ function commitEnter(text) {
 }
 
 // Space: quarter-beat (sixteenth) step. Empty -> place 三角＋黒丸; else write cell.
+// Inside a tuplet, Space also moves slot-to-slot.
 function commitSpace(text) {
+  const c0 = State.currentCell();
+  const inTuplet = c0 && c0.tuplet && c0.tuplet.pos != null;
   if (text.trim() === '') {
     const cell = State.currentCell();
-    if (cell) Object.assign(cell, newCell(), { sustain: 'eighth' }); // △＋黒丸
-    State.advanceSixteenth();
+    if (cell) {
+      const keepTuplet = cell.tuplet;
+      Object.assign(cell, newCell(), { sustain: 'eighth' }); // △＋黒丸
+      if (keepTuplet) cell.tuplet = keepTuplet;
+    }
+    if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
     return true;
   }
   const hint = applyInputToCell(text);
   if (hint === 'error') return false;
-  State.advanceSixteenth();
+  if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
   return true;
 }
 

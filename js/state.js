@@ -205,16 +205,25 @@ const State = {
    * labelled with N (3=三連符, 5=五連符...). `beats` records the intended
    * duration in beats (e.g. 2拍三連符 -> n:3, beats:2) for display. */
   _tupletSeq: 0,
+  // n notes redistributed over `beats` beats. Reserves beats*cellsPerBeat
+  // sixteenth cells (so measure timing stays aligned); the first n hold the
+  // notes (pos 0..n-1) and the rest are filler (pos null).
   markTupletAtCursor(n, beats) {
     const m = this.currentMeasure();
     if (!m) return;
-    const start = this.cursor.cell;
+    const per = cellsPerBeat(m.timeSignature.den);
+    // snap start down to an eighth boundary so the grid stays aligned
+    let start = this.cursor.cell - (this.cursor.cell % 2);
+    const span = Math.min(beats * per, m.cells.length - start);
+    if (span < n) return; // not enough room
     const id = ++this._tupletSeq;
-    const last = Math.min(start + n - 1, m.cells.length - 1);
-    const total = last - start + 1;
-    for (let i = start; i <= last; i++) {
-      m.cells[i].tuplet = { id, n, beats, pos: i - start, total };
+    for (let i = start; i < start + span; i++) {
+      const rel = i - start;
+      const pos = rel < n ? rel : null;
+      if (pos === null) Object.assign(m.cells[i], newCell()); // clear filler
+      m.cells[i].tuplet = { id, n, beats, span, pos };
     }
+    this.cursor.cell = start; // park on the first slot
   },
   clearTupletAtCursor() {
     const m = this.currentMeasure();
@@ -224,6 +233,25 @@ const State = {
     for (const cell of m.cells) {
       if (cell.tuplet && cell.tuplet.id === id) cell.tuplet = null;
     }
+  },
+
+  // If the cursor sits on a tuplet slot, advance to the next slot, or out of
+  // the tuplet after the last slot. Returns true if it handled the advance.
+  advanceTupletSlot() {
+    const c = this.currentCell();
+    if (!c || !c.tuplet || c.tuplet.pos == null) return false;
+    const t = c.tuplet;
+    const m = this.currentMeasure();
+    const slotStart = this.cursor.cell - t.pos;
+    if (t.pos < t.n - 1) {
+      this.cursor.cell = slotStart + t.pos + 1;
+    } else {
+      // exit past the whole tuplet span
+      const exit = slotStart + t.span;
+      if (exit < m.cells.length) this.cursor.cell = exit;
+      else this.advanceSixteenth();
+    }
+    return true;
   },
 
   /* Re-run pitch->string conversion for every cell, using the original
