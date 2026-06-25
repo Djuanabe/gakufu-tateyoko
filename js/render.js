@@ -37,11 +37,25 @@ function cellHasContent(c) {
 function renderScore(state) {
   const root = document.getElementById('score');
   root.innerHTML = '';
-  const sys = document.createElement('div');
-  sys.className = 'system';
-  root.appendChild(sys);
+  const type = state.sheet.instrumentType;
+  const multiPart = state.sheet.parts.length > 1;
+  const PART_LABELS = ['第一', '第二', '第三', '第四'];
+  let firstSys = null;
 
-  state.sheet.measures.forEach((m, mIdx) => {
+  state.sheet.parts.forEach((part, partIdx) => {
+  const sys = document.createElement('div');
+  sys.className = 'system' + (multiPart && state.cursor.part === partIdx ? ' active-part' : '');
+  sys.dataset.part = partIdx;
+  if (firstSys === null) firstSys = sys;
+
+  if (multiPart) {
+    const lbl = document.createElement('div');
+    lbl.className = 'part-label';
+    lbl.textContent = PART_LABELS[partIdx] || ('第' + (partIdx + 1));
+    sys.appendChild(lbl);
+  }
+
+  part.measures.forEach((m, mIdx) => {
     const mEl = document.createElement('div');
     mEl.className = 'measure';
     mEl.dataset.measure = mIdx;
@@ -61,8 +75,8 @@ function renderScore(state) {
       mEl.appendChild(badge);
     }
 
-    const cursorHere = (idx) => state.cursor.measure === mIdx && state.cursor.cell === idx;
-    const type = state.sheet.instrumentType;
+    const cursorHere = (idx) =>
+      state.cursor.part === partIdx && state.cursor.measure === mIdx && state.cursor.cell === idx;
     const cells = m.cells;
 
     let i = 0;
@@ -133,19 +147,23 @@ function renderScore(state) {
     }
     sys.appendChild(mEl);
   });
+  root.appendChild(sys);
+  }); // parts
 
   // Draw tuplet brackets (needs the cells laid out in the DOM for offsets).
   drawTupletBrackets(root);
 
-  // Overlay free-form drawings (lines / waves / arrows).
-  if (typeof renderDrawings === 'function') renderDrawings(sys, state);
+  // Overlay free-form drawings (lines / waves / arrows) on the first part.
+  if (typeof renderDrawings === 'function' && firstSys) renderDrawings(firstSys, state);
 
   // attach click handlers for cell selection
   root.querySelectorAll('.cell').forEach(el => {
     el.addEventListener('click', () => {
       const mIdx = parseInt(el.dataset.measure, 10);
       const cIdx = parseInt(el.dataset.cell, 10);
-      State.setCursor(mIdx, cIdx);
+      const sysEl = el.closest('.system');
+      const partIdx = sysEl ? (parseInt(sysEl.dataset.part, 10) || 0) : 0;
+      State.setCursor(mIdx, cIdx, partIdx);
       renderScore(State);
       const inp = document.getElementById('cell-input');
       inp.focus();
@@ -174,7 +192,8 @@ function renderScore(state) {
   // Update the measure-info readout (e.g. "5 / 8")
   const info = document.getElementById('measure-info');
   if (info) {
-    info.textContent = `${state.cursor.measure + 1} / ${state.sheet.measures.length}小節`;
+    const partTxt = state.sheet.parts.length > 1 ? `［${PART_LABELS[state.cursor.part] || ('第' + (state.cursor.part + 1))}］ ` : '';
+    info.textContent = `${partTxt}${state.cursor.measure + 1} / ${state.activeMeasures().length}小節`;
   }
 }
 

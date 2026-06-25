@@ -94,20 +94,43 @@ const State = {
     // Ordered list of tuning sections. The first (fromMeasure 0) is the base
     // tuning; later entries override it from their measure onward.
     tunings: [{ fromMeasure: 0, tuning: defaultTuning13() }],
-    measures: [],
+    // Ensemble parts (重奏). parts[0] = 第1, parts[1] = 第2 (optional). Every
+    // part keeps the same number of measures / time signatures (they play
+    // together); only the cell contents differ.
+    parts: [{ measures: [] }],
     // Free-form drawings overlaid on the score (straight / wavy / arrow),
     // constrained to horizontal or vertical. Coords are px within the system.
     drawings: []
   },
   // unit = the "length" the cursor currently represents: 'half' (eighth) or
   // 'quarter' (sixteenth). It drives how far Backspace retreats over blanks.
-  cursor: { measure: 0, cell: 0, unit: 'half' },
+  // part = which ensemble part is being edited (0 = 第1, 1 = 第2).
+  cursor: { part: 0, measure: 0, cell: 0, unit: 'half' },
 
   init() {
-    // Start with 4 empty measures
+    // Start with 4 empty measures in the first part
     for (let i = 0; i < 4; i++) {
-      this.sheet.measures.push(newMeasure(4, 4));
+      this.sheet.parts[0].measures.push(newMeasure(4, 4));
     }
+  },
+
+  /* Ensemble parts (重奏) ---------------------------------------------- */
+  partCount() { return this.sheet.parts.length; },
+  hasSecondPart() { return this.sheet.parts.length > 1; },
+  activeMeasures() { return this.sheet.parts[this.cursor.part].measures; },
+
+  // Add a second part, seeded with the same number of empty measures (matching
+  // each measure's time signature) as the first part.
+  addSecondPart() {
+    if (this.sheet.parts.length > 1) return;
+    const measures = this.sheet.parts[0].measures.map(m =>
+      newMeasure(m.timeSignature.num, m.timeSignature.den));
+    this.sheet.parts.push({ measures });
+  },
+  removeSecondPart() {
+    if (this.sheet.parts.length < 2) return;
+    this.sheet.parts.pop();
+    if (this.cursor.part > this.sheet.parts.length - 1) this.cursor.part = 0;
   },
 
   setInstrumentType(type) {
@@ -148,7 +171,7 @@ const State = {
     this.sheet.tunings = this.sheet.tunings.filter(t => t.fromMeasure !== fromMeasure);
   },
 
-  currentMeasure() { return this.sheet.measures[this.cursor.measure]; },
+  currentMeasure() { return this.activeMeasures()[this.cursor.measure]; },
   currentCell() {
     const m = this.currentMeasure();
     return m ? m.cells[this.cursor.cell] : null;
@@ -160,13 +183,14 @@ const State = {
     if (!m) return;
     if (this.cursor.cell < m.cells.length - 1) {
       this.cursor.cell++;
-    } else if (this.cursor.measure < this.sheet.measures.length - 1) {
+    } else if (this.cursor.measure < this.activeMeasures().length - 1) {
       this.cursor.measure++;
       this.cursor.cell = 0;
     } else {
-      // append a new measure with the same time signature
+      // append a new measure (same time signature) to every part so the
+      // ensemble parts stay aligned
       const ts = m.timeSignature;
-      this.sheet.measures.push(newMeasure(ts.num, ts.den));
+      this.sheet.parts.forEach(p => p.measures.push(newMeasure(ts.num, ts.den)));
       this.cursor.measure++;
       this.cursor.cell = 0;
     }
@@ -190,7 +214,7 @@ const State = {
       this.cursor.cell--;
     } else if (this.cursor.measure > 0) {
       this.cursor.measure--;
-      this.cursor.cell = this.sheet.measures[this.cursor.measure].cells.length - 1;
+      this.cursor.cell = this.activeMeasures()[this.cursor.measure].cells.length - 1;
     }
   },
 
@@ -205,7 +229,7 @@ const State = {
   // sits on an eighth boundary with an empty following sixteenth, otherwise a
   // sixteenth ('quarter').
   noteUnitAt(mIdx, cIdx) {
-    const m = this.sheet.measures[mIdx];
+    const m = this.activeMeasures()[mIdx];
     if (!m) return 'half';
     if (cIdx % 2 === 1) return 'quarter';
     const next = m.cells[cIdx + 1];
@@ -221,10 +245,14 @@ const State = {
     this.cursor.unit = has ? this.noteUnitAt(this.cursor.measure, this.cursor.cell) : 'half';
   },
 
-  setCursor(mIdx, cIdx) {
-    if (mIdx >= 0 && mIdx < this.sheet.measures.length) {
+  setCursor(mIdx, cIdx, partIdx) {
+    if (partIdx != null && partIdx >= 0 && partIdx < this.sheet.parts.length) {
+      this.cursor.part = partIdx;
+    }
+    const measures = this.activeMeasures();
+    if (mIdx >= 0 && mIdx < measures.length) {
       this.cursor.measure = mIdx;
-      const len = this.sheet.measures[mIdx].cells.length;
+      const len = measures[mIdx].cells.length;
       this.cursor.cell = Math.max(0, Math.min(cIdx, len - 1));
       this.syncUnitToCell();
     }
@@ -305,44 +333,49 @@ const State = {
    * pitch info stored in note.source (or in cell.unconverted). Standalone
    * marks (no source) are left untouched. */
   reconvertAll() {
-    this.sheet.measures.forEach((m, mIdx) => {
-      const tuning = this.tuningForMeasure(mIdx);
-      for (const c of m.cells) {
-        const pitches = [];
-        const standalone = [];
-        if (c.notes && c.notes.length > 0) {
-          for (const n of c.notes) {
-            if (n.source) pitches.push(n.source);
-            else if (n.stringIndex < 0 && n.leftMark) standalone.push(n);
+    this.sheet.parts.forEach(part => {
+      part.measures.forEach((m, mIdx) => {
+        const tuning = this.tuningForMeasure(mIdx);
+        for (const c of m.cells) {
+          const pitches = [];
+          const standalone = [];
+          if (c.notes && c.notes.length > 0) {
+            for (const n of c.notes) {
+              if (n.source) pitches.push(n.source);
+              else if (n.stringIndex < 0 && n.leftMark) standalone.push(n);
+            }
+          }
+          if (c.unconverted) for (const p of c.unconverted) pitches.push(p);
+          if (pitches.length === 0) continue;
+          applyChord(c, pitches, tuning);
+          if (standalone.length > 0) {
+            c.notes = [...standalone, ...(c.notes || [])];
           }
         }
-        if (c.unconverted) for (const p of c.unconverted) pitches.push(p);
-        if (pitches.length === 0) continue;
-        applyChord(c, pitches, tuning);
-        if (standalone.length > 0) {
-          c.notes = [...standalone, ...(c.notes || [])];
-        }
-      }
+      });
     });
   },
 
   addMeasure() {
     const ts = this.sheet.timeSignature;
-    this.sheet.measures.push(newMeasure(ts.num, ts.den));
+    // keep every part the same length
+    this.sheet.parts.forEach(p => p.measures.push(newMeasure(ts.num, ts.den)));
   },
 
   changeTimeSignatureFromHere(num, den) {
     this.sheet.timeSignature = {num, den};
-    // re-shape current and subsequent measures
-    for (let i = this.cursor.measure; i < this.sheet.measures.length; i++) {
-      const old = this.sheet.measures[i];
-      const fresh = newMeasure(num, den);
-      // preserve existing cells where possible
-      for (let j = 0; j < Math.min(old.cells.length, fresh.cells.length); j++) {
-        fresh.cells[j] = old.cells[j];
+    // re-shape current and subsequent measures in every part
+    this.sheet.parts.forEach(part => {
+      for (let i = this.cursor.measure; i < part.measures.length; i++) {
+        const old = part.measures[i];
+        const fresh = newMeasure(num, den);
+        // preserve existing cells where possible
+        for (let j = 0; j < Math.min(old.cells.length, fresh.cells.length); j++) {
+          fresh.cells[j] = old.cells[j];
+        }
+        part.measures[i] = fresh;
       }
-      this.sheet.measures[i] = fresh;
-    }
+    });
   },
 
   serialize() {
@@ -351,15 +384,20 @@ const State = {
   deserialize(json) {
     try {
       const obj = JSON.parse(json);
-      if (obj && obj.measures && (obj.tunings || obj.tuning)) {
+      if (obj && (obj.parts || obj.measures) && (obj.tunings || obj.tuning)) {
         // migrate old single-tuning saves
         if (!obj.tunings && obj.tuning) {
           obj.tunings = [{ fromMeasure: 0, tuning: obj.tuning }];
           delete obj.tuning;
         }
+        // migrate old single-part saves (sheet.measures -> sheet.parts[0])
+        if (!obj.parts && obj.measures) {
+          obj.parts = [{ measures: obj.measures }];
+          delete obj.measures;
+        }
         if (!obj.drawings) obj.drawings = [];
         this.sheet = obj;
-        this.cursor = {measure: 0, cell: 0, unit: 'half'};
+        this.cursor = {part: 0, measure: 0, cell: 0, unit: 'half'};
         return true;
       }
     } catch (e) { console.warn('load failed', e); }
