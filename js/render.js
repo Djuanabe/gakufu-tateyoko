@@ -21,6 +21,14 @@ const LEFT_MARK_GLYPH = { 'wo': 'ヲ', 'o': 'オ' };
 // eighth (= 2 sixteenths) is drawn at full size.
 const H8 = 56;        // eighth-note cell height (px) — 4 beats (=8 eighths) ≈ viewport
 const H16 = H8 / 2;   // sixteenth-note cell height (px)
+// Note glyphs fill their cell vertically: a half-beat (eighth) note is exactly
+// H8 tall. Font-size ≈ cell height (CJK glyphs fill close to the em box).
+const FONT_FILL = 0.98;
+
+function sizeCell(el, h) {
+  el.style.height = h + 'px';
+  el.style.fontSize = (h * FONT_FILL) + 'px';
+}
 
 function cellHasContent(c) {
   return !!(c && ((c.notes && c.notes.length > 0) || c.rest || c.sustain || c.unconverted));
@@ -74,7 +82,7 @@ function renderScore(state) {
         for (let s = 0; s < t.n; s++) {
           const idx = i + s;
           const cEl = renderCell(cells[idx], type);
-          cEl.style.height = slotH + 'px';
+          sizeCell(cEl, slotH);
           cEl.classList.add('tuplet');
           cEl.dataset.measure = mIdx;
           cEl.dataset.cell = idx;
@@ -102,20 +110,20 @@ function renderScore(state) {
 
       if (subdivided) {
         const a = renderCell(cell, type);
-        a.style.height = H16 + 'px';
+        sizeCell(a, H16);
         a.dataset.measure = mIdx; a.dataset.cell = i;
         if (cursorHere(i)) a.classList.add('active');
         mEl.appendChild(a); // no divider line under the first sixteenth
 
         const b = renderCell(next || newCell(), type);
-        b.style.height = H16 + 'px';
+        sizeCell(b, H16);
         b.dataset.measure = mIdx; b.dataset.cell = i + 1;
         b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
         if (cursorHere(i + 1)) b.classList.add('active');
         mEl.appendChild(b);
       } else {
         const a = renderCell(cell, type);
-        a.style.height = H8 + 'px';
+        sizeCell(a, H8);
         a.dataset.measure = mIdx; a.dataset.cell = i;
         a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
         if (cursorHere(i)) a.classList.add('active');
@@ -265,23 +273,24 @@ function renderCell(cell, instrumentType) {
     return el;
   }
 
-  // One horizontal row: [katakana/text symbols (left)] then [chord notes].
-  // Katakana/text are the same size as note names and sit to the LEFT, like ヲ/オ.
+  // One horizontal row: [left symbols (katakana/・)] [chord notes] [right '8'].
+  // All are the same size as the note name. Left sits left like ヲ/オ; '8'
+  // is pinned to the far right.
   const notes = cell.notes || [];
   const leftText = cell.left || [];
-  const total = notes.length + leftText.length;
+  const rightText = cell.right || [];
+  const total = notes.length + leftText.length + rightText.length;
   if (total > 0) {
     const stack = document.createElement('div');
     const hasMark = notes.some(x => x.leftMark);
     stack.className = 'stack ' + (total > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
     if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
-    if (total > 1) {
-      const scale = Math.max(0.4, 1 / Math.sqrt(total));
-      stack.style.fontSize = (1.15 * scale) + 'em';
-      stack.style.lineHeight = '0.9';
+    if (notes.length > 1) {
+      // Chord notes side-by-side: keep the glyph size, squeeze vertically to fit.
+      stack.style.transform = `scaleY(${(1 / notes.length).toFixed(3)})`;
+      stack.style.transformOrigin = 'center';
     }
-    // left-side katakana/text symbols first (so they render to the left)
-    leftText.forEach(txt => {
+    const addText = txt => {
       const row = document.createElement('div');
       row.className = 'note-row';
       const label = document.createElement('span');
@@ -289,7 +298,9 @@ function renderCell(cell, instrumentType) {
       label.textContent = txt;
       row.appendChild(label);
       stack.appendChild(row);
-    });
+    };
+    // left-side symbols first (so they render to the left)
+    leftText.forEach(addText);
     notes.forEach(n => {
       const row = document.createElement('div');
       row.className = 'note-row';
@@ -311,6 +322,8 @@ function renderCell(cell, instrumentType) {
       }
       stack.appendChild(row);
     });
+    // far-right symbols ('8') last so they sit at the right end
+    rightText.forEach(addText);
     el.appendChild(stack);
   }
 

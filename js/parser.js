@@ -42,16 +42,19 @@ function parseCellInput(text) {
   const low = t.toLowerCase();
   if (SPECIAL_TOKENS[low]) return SPECIAL_TOKENS[low];
 
-  // Tokens: note tokens form the chord (center); any non-note token is a
-  // katakana/text symbol placed to the LEFT (like ヲ/オ), at note size.
+  // Tokens: note tokens form the chord (center); '8' is a symbol pinned to the
+  // far RIGHT; any other non-note token (katakana, ・ など) is a symbol placed
+  // to the LEFT (like ヲ/オ), at note size.
   const notes = [];
   const left = [];
+  const right = [];
   for (const tok of t.split(SEP_RE).filter(Boolean)) {
+    if (tok === '8') { right.push('8'); continue; }
     const note = parseNoteToken(tok.toLowerCase());
     if (note) notes.push(note);
     else left.push(toKatakana(tok));
   }
-  return { type: 'composite', notes, left };
+  return { type: 'composite', notes, left, right };
 }
 
 function parseNoteToken(tok) {

@@ -29,7 +29,8 @@ function applyInputToCell(text, opts) {
   }
   if (parsed.type === 'composite') {
     applyChord(cell, parsed.notes, State.tuningForCursor()); // sets notes + unconverted
-    cell.left = parsed.left;        // katakana/text symbols, placed to the left
+    cell.left = parsed.left;        // katakana/・ symbols, placed to the left
+    cell.right = parsed.right || []; // '8' symbol, pinned to the far right
     cell.centerText = [];
     cell.rest = null; cell.sustain = null;
     cell.raw = text;

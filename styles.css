@@ -202,13 +202,15 @@ body {
   min-width: 1.5em;
   box-sizing: border-box;
 }
-/* 単独音・オ/ヲ付きの単独音は正円で囲む（縦横を揃える） */
+/* 単独音・オ/ヲ付きの単独音は正円で囲む（縦横を揃える）。
+   音名はセル高いっぱいだが、囲み円は半拍の高さに収まるよう少し小さくする。 */
 .cell .stack.single.circled {
   width: auto;            /* shrink to the glyph (don't fill the cell width) */
+  font-size: 0.66em;      /* so the enclosing circle fits the half-beat height */
   aspect-ratio: 1 / 1;
-  padding: 2px;
-  min-width: 1.8em;
-  min-height: 1.8em;
+  padding: 0.08em;
+  min-width: 1.4em;
+  min-height: 1.4em;
   display: inline-flex;
   align-items: center;
   justify-content: center;

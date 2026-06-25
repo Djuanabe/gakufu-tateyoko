@@ -74,7 +74,7 @@ function pitchToMidi(p) {
 
 function newCell() {
   return { notes: [], rest: null, sustain: null, unconverted: null, raw: '',
-           tuplet: null, circled: false, centerText: [], left: [] };
+           tuplet: null, circled: false, centerText: [], left: [], right: [] };
 }
 
 // Smallest cell = a sixteenth note (= quarter of a beat when den=4).
