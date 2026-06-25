@@ -158,6 +158,30 @@ const State = {
     if (c) Object.assign(c, newCell());
   },
 
+  /* Re-run pitch->string conversion for every cell, using the original
+   * pitch info stored in note.source (or in cell.unconverted). Standalone
+   * marks (no source) are left untouched. */
+  reconvertAll() {
+    for (const m of this.sheet.measures) {
+      for (const c of m.cells) {
+        const pitches = [];
+        const standalone = [];
+        if (c.notes && c.notes.length > 0) {
+          for (const n of c.notes) {
+            if (n.source) pitches.push(n.source);
+            else if (n.stringIndex < 0 && n.leftMark) standalone.push(n);
+          }
+        }
+        if (c.unconverted) for (const p of c.unconverted) pitches.push(p);
+        if (pitches.length === 0) continue;
+        applyChord(c, pitches, this.sheet.tuning);
+        if (standalone.length > 0) {
+          c.notes = [...standalone, ...(c.notes || [])];
+        }
+      }
+    }
+  },
+
   addMeasure() {
     const ts = this.sheet.timeSignature;
     this.sheet.measures.push(newMeasure(ts.num, ts.den));

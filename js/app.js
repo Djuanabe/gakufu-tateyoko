@@ -113,8 +113,11 @@ function buildTuningTable() {
       if (!note) { alert('入力形式が不正です'); inp.value = cur; return; }
       const oct = octaveFromPref(note.octavePref, note.letter);
       const pitch = {letter: note.letter, accidental: note.accidental, octave: oct};
+      History.push();
       State.sheet.tuning[idx] = {...pitch, midi: pitchToMidi(pitch)};
       tdMidi.textContent = pitchToMidi(pitch);
+      State.reconvertAll();
+      refresh();
     });
     tdInput.appendChild(inp);
     const tdMidi = document.createElement('td');
@@ -185,12 +188,29 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('add-measure').addEventListener('click', () => {
     History.push();
     State.addMeasure();
+    // jump cursor to the new measure so the viewport scrolls to show it
+    State.setCursor(State.sheet.measures.length - 1, 0);
     refresh();
+  });
+
+  const jumpInput = document.getElementById('jump-measure');
+  const doJump = () => {
+    const n = parseInt(jumpInput.value, 10);
+    if (!isNaN(n) && n >= 1 && n <= State.sheet.measures.length) {
+      State.setCursor(n - 1, 0);
+      refresh();
+      document.getElementById('cell-input').focus();
+    }
+  };
+  document.getElementById('jump-btn').addEventListener('click', doJump);
+  jumpInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); doJump(); }
   });
 
   document.getElementById('instrument-type').addEventListener('change', (e) => {
     History.push();
     State.setInstrumentType(e.target.value);
+    State.reconvertAll();
     refresh();
   });
 

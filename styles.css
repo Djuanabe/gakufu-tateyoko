@@ -70,10 +70,12 @@ body {
   background: #fffef7;
   padding: 0.6em;
   border: 1px solid #ccc;
+  height: 460px;            /* fixed viewport height */
   overflow-x: auto;
+  overflow-y: hidden;
   display: flex;
   flex-direction: row-reverse;
-  min-height: 700px;
+  align-items: flex-start;
 }
 
 /* Each "system" is one horizontal row of music (measures right-to-left). */

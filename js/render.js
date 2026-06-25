@@ -57,6 +57,26 @@ function renderScore(state) {
       inp.value = '';
     });
   });
+
+  // Keep the cursor cell scrolled into view inside the fixed-size viewport.
+  const active = root.querySelector('.cell.active');
+  if (active) {
+    const r = active.getBoundingClientRect();
+    const sr = root.getBoundingClientRect();
+    if (r.left < sr.left || r.right > sr.right) {
+      const measureEl = active.closest('.measure');
+      if (measureEl) {
+        const offset = measureEl.offsetLeft - (root.clientWidth / 2 - measureEl.clientWidth / 2);
+        root.scrollLeft = offset;
+      }
+    }
+  }
+
+  // Update the measure-info readout (e.g. "5 / 8")
+  const info = document.getElementById('measure-info');
+  if (info) {
+    info.textContent = `${state.cursor.measure + 1} / ${state.sheet.measures.length}小節`;
+  }
 }
 
 function makeSustainGlyph(kind) {
