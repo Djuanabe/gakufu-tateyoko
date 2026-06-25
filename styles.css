@@ -72,7 +72,7 @@ body {
   border: 1px solid #ccc;
   height: 460px;            /* fixed viewport height */
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: row-reverse;
   align-items: flex-start;
@@ -102,7 +102,7 @@ body {
 
 .cell {
   flex: 0 0 auto;
-  height: 34px;
+  height: 28px;
   border-bottom: 1px solid #ccc;
   position: relative;
   cursor: pointer;
@@ -178,8 +178,36 @@ body {
 .cell .rest { font-size: 1em; color: #333; }
 .cell .unknown { color: #c0392b; font-size: 0.7em; }
 
-/* Beat divider (every halfBeatsPerBeat cells = 1 beat) - heavier line */
+/* Beat divider (heavier) and eighth-note divider (medium) */
 .cell.beat-end { border-bottom: 2px solid #444; }
+.cell.half-end { border-bottom: 1px solid #888; }
+
+/* Tuplet bracket: slur-like curve on the right of the grouped cells. */
+.measure { /* ensure positioning context (already relative) */ }
+.tuplet-bracket {
+  position: absolute;
+  right: 0;
+  width: 16px;
+  pointer-events: none;
+  z-index: 5;
+}
+.tuplet-num {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  font-size: 0.7em;
+  color: #333;
+  background: #fffef7;
+  padding: 0 1px;
+}
+
+.tuplet-row {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  font-size: 0.9em;
+  margin-top: 0.3em;
+}
 
 /* Tuning-change marker on a measure column */
 .measure.tuning-change { border-right: 4px double #b8761a; }

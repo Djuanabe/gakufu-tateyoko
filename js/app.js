@@ -1,45 +1,61 @@
 /* App glue: wire UI events to state + parser + tuning + render. */
 
-function commitInput(text) {
+/* Write the parsed input into the current cell WITHOUT moving the cursor.
+ * Returns a hint describing the natural advance for the Enter key:
+ *   'beat' | 'half' | 'empty' | 'error' | 'done'
+ * (Space always advances a single sixteenth regardless of the hint.) */
+function applyInputToCell(text) {
   const cell = State.currentCell();
-  if (!cell) return;
+  if (!cell) return 'done';
   const parsed = parseCellInput(text);
 
-  if (parsed.type === 'empty') {
-    State.advanceHalfBeat();
-    return;
-  }
-  if (parsed.type === 'error') {
-    alert(parsed.message);
-    return;
-  }
+  if (parsed.type === 'empty') return 'empty';
+  if (parsed.type === 'error') { alert(parsed.message); return 'error'; }
+
   if (parsed.type === 'rest') {
     Object.assign(cell, { rest: parsed.value, sustain: null, notes: [], unconverted: null });
-    if (parsed.value === 'quarter') State.advanceBeat();
-    else State.advanceHalfBeat();
-    return;
+    return parsed.value === 'quarter' ? 'beat' : 'half';
   }
   if (parsed.type === 'sustain') {
     Object.assign(cell, { sustain: parsed.value, rest: null, notes: [], unconverted: null });
-    // quarter sustain (3) advances a full beat; eighth (4) advances half a beat
-    if (parsed.value === 'quarter') State.advanceBeat();
-    else State.advanceHalfBeat();
-    return;
+    return parsed.value === 'quarter' ? 'beat' : 'half';
   }
   if (parsed.type === 'mark') {
-    // Standalone ヲ or オ in a cell with no note: store as a "note" with no string
     cell.notes = [{ stringIndex: -1, leftMark: parsed.value, source: null }];
     cell.rest = null; cell.sustain = null; cell.unconverted = null;
-    State.advanceHalfBeat();
-    return;
+    return 'half';
   }
   if (parsed.type === 'chord') {
     applyChord(cell, parsed.notes, State.tuningForCursor());
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
-    State.advanceHalfBeat();
-    return;
+    return 'half';
   }
+  return 'done';
+}
+
+// Enter: write the cell and advance by the natural duration.
+function commitEnter(text) {
+  const hint = applyInputToCell(text);
+  if (hint === 'error') return false;
+  if (hint === 'empty') State.advanceHalfBeat();
+  else if (hint === 'beat') State.advanceBeat();
+  else State.advanceHalfBeat();
+  return true;
+}
+
+// Space: quarter-beat (sixteenth) step. Empty -> place 三角＋黒丸; else write cell.
+function commitSpace(text) {
+  if (text.trim() === '') {
+    const cell = State.currentCell();
+    if (cell) Object.assign(cell, newCell(), { sustain: 'eighth' }); // △＋黒丸
+    State.advanceSixteenth();
+    return true;
+  }
+  const hint = applyInputToCell(text);
+  if (hint === 'error') return false;
+  State.advanceSixteenth();
+  return true;
 }
 
 function refresh() {
@@ -231,7 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       History.push();
-      commitInput(input.value);
+      commitEnter(input.value);
+      input.value = '';
+      refresh();
+      return;
+    }
+    if (e.key === ' ' || e.code === 'Space') {
+      // Space = quarter-beat (sixteenth) step
+      e.preventDefault();
+      History.push();
+      commitSpace(input.value);
       input.value = '';
       refresh();
       return;
@@ -255,6 +280,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('del-cell').addEventListener('click', () => {
     History.push();
     State.clearCurrentCell();
+    refresh();
+  });
+
+  document.getElementById('tuplet-add').addEventListener('click', () => {
+    History.push();
+    const n = parseInt(document.getElementById('tuplet-n').value, 10) || 3;
+    const beats = parseInt(document.getElementById('tuplet-beats').value, 10) || 1;
+    State.markTupletAtCursor(n, beats);
+    refresh();
+    document.getElementById('cell-input').focus();
+  });
+  document.getElementById('tuplet-clear').addEventListener('click', () => {
+    History.push();
+    State.clearTupletAtCursor();
     refresh();
   });
   document.getElementById('add-measure').addEventListener('click', () => {

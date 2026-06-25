@@ -73,11 +73,14 @@ function pitchToMidi(p) {
 }
 
 function newCell() {
-  return { notes: [], rest: null, sustain: null, unconverted: null, raw: '' };
+  return { notes: [], rest: null, sustain: null, unconverted: null, raw: '', tuplet: null };
 }
 
+// Smallest cell = a sixteenth note (= quarter of a beat when den=4).
+function cellsPerBeat(den) { return Math.max(1, Math.round(16 / den)); }
+
 function newMeasure(num, den) {
-  const cellCount = num * Math.max(1, Math.round(8/den)); // half-beat cells per measure
+  const cellCount = num * cellsPerBeat(den);
   const cells = [];
   for (let i = 0; i < cellCount; i++) cells.push(newCell());
   return { timeSignature: {num, den}, cells };
@@ -145,7 +148,8 @@ const State = {
     return m ? m.cells[this.cursor.cell] : null;
   },
 
-  advanceHalfBeat() {
+  // Move one sixteenth-note cell forward (the smallest step).
+  advanceSixteenth() {
     const m = this.currentMeasure();
     if (!m) return;
     if (this.cursor.cell < m.cells.length - 1) {
@@ -162,13 +166,16 @@ const State = {
     }
   },
 
+  advanceHalfBeat() {
+    const ts = this.currentMeasure() ? this.currentMeasure().timeSignature : {den:4};
+    const steps = Math.max(1, Math.round(cellsPerBeat(ts.den) / 2)); // den=4 => 2 (an eighth)
+    for (let i = 0; i < steps; i++) this.advanceSixteenth();
+  },
+
   advanceBeat() {
-    // a beat = 2 half-beat cells for den=4. For other den, ratio differs.
-    const m = this.currentMeasure();
-    if (!m) return;
-    const ts = m.timeSignature;
-    const halfBeatsPerBeat = Math.max(1, Math.round(8/ts.den) ); // den=4 => 2
-    for (let i = 0; i < halfBeatsPerBeat; i++) this.advanceHalfBeat();
+    const ts = this.currentMeasure() ? this.currentMeasure().timeSignature : {den:4};
+    const steps = cellsPerBeat(ts.den); // den=4 => 4
+    for (let i = 0; i < steps; i++) this.advanceSixteenth();
   },
 
   retreatHalfBeat() {
@@ -191,6 +198,32 @@ const State = {
   clearCurrentCell() {
     const c = this.currentCell();
     if (c) Object.assign(c, newCell());
+  },
+
+  /* Tuplets ------------------------------------------------------------ *
+   * A tuplet tags N consecutive cells (one note per cell) as a group,
+   * labelled with N (3=三連符, 5=五連符...). `beats` records the intended
+   * duration in beats (e.g. 2拍三連符 -> n:3, beats:2) for display. */
+  _tupletSeq: 0,
+  markTupletAtCursor(n, beats) {
+    const m = this.currentMeasure();
+    if (!m) return;
+    const start = this.cursor.cell;
+    const id = ++this._tupletSeq;
+    const last = Math.min(start + n - 1, m.cells.length - 1);
+    const total = last - start + 1;
+    for (let i = start; i <= last; i++) {
+      m.cells[i].tuplet = { id, n, beats, pos: i - start, total };
+    }
+  },
+  clearTupletAtCursor() {
+    const m = this.currentMeasure();
+    const c = this.currentCell();
+    if (!m || !c || !c.tuplet) return;
+    const id = c.tuplet.id;
+    for (const cell of m.cells) {
+      if (cell.tuplet && cell.tuplet.id === id) cell.tuplet = null;
+    }
   },
 
   /* Re-run pitch->string conversion for every cell, using the original

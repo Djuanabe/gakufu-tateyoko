@@ -29,7 +29,8 @@ function renderScore(state) {
     mEl.dataset.measure = mIdx;
 
     const ts = m.timeSignature;
-    const halfBeatsPerBeat = Math.max(1, Math.round(8 / ts.den)); // 4/4 -> 2
+    const perBeat = Math.max(1, Math.round(16 / ts.den));   // sixteenth cells per beat (4/4 -> 4)
+    const perHalf = Math.max(1, Math.round(perBeat / 2));   // eighth boundary (4/4 -> 2)
 
     // mark a tuning change that begins at this measure
     if (state.sheet.tunings &&
@@ -45,8 +46,14 @@ function renderScore(state) {
       const cEl = renderCell(cell, state.sheet.instrumentType);
       cEl.dataset.measure = mIdx;
       cEl.dataset.cell = cellIdx;
-      // heavier line at the end of each beat
-      if ((cellIdx + 1) % halfBeatsPerBeat === 0) cEl.classList.add('beat-end');
+      // heavier line at the end of each beat; medium line at each eighth
+      if ((cellIdx + 1) % perBeat === 0) cEl.classList.add('beat-end');
+      else if ((cellIdx + 1) % perHalf === 0) cEl.classList.add('half-end');
+      if (cell.tuplet) {
+        cEl.classList.add('tuplet');
+        cEl.dataset.tupletId = cell.tuplet.id;
+        cEl.dataset.tupletN = cell.tuplet.n;
+      }
       if (state.cursor.measure === mIdx && state.cursor.cell === cellIdx) {
         cEl.classList.add('active');
       }
@@ -54,6 +61,9 @@ function renderScore(state) {
     });
     sys.appendChild(mEl);
   });
+
+  // Draw tuplet brackets (needs the cells laid out in the DOM for offsets).
+  drawTupletBrackets(root);
 
   // attach click handlers for cell selection
   root.querySelectorAll('.cell').forEach(el => {
@@ -80,6 +90,10 @@ function renderScore(state) {
         root.scrollLeft = offset;
       }
     }
+    // vertical: keep the active cell within the viewport height
+    if (r.top < sr.top || r.bottom > sr.bottom) {
+      root.scrollTop = active.offsetTop - root.clientHeight / 2 + active.offsetHeight / 2;
+    }
   }
 
   // Update the measure-info readout (e.g. "5 / 8")
@@ -87,6 +101,54 @@ function renderScore(state) {
   if (info) {
     info.textContent = `${state.cursor.measure + 1} / ${state.sheet.measures.length}小節`;
   }
+}
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+// Overlay a slur-like curve + number on each run of tuplet cells.
+function drawTupletBrackets(root) {
+  root.querySelectorAll('.measure').forEach(mEl => {
+    const cells = [...mEl.querySelectorAll('.cell.tuplet')];
+    let i = 0;
+    while (i < cells.length) {
+      const id = cells[i].dataset.tupletId;
+      const n = cells[i].dataset.tupletN;
+      let j = i;
+      while (j + 1 < cells.length && cells[j + 1].dataset.tupletId === id) j++;
+      const first = cells[i], last = cells[j];
+      const top = first.offsetTop;
+      const bottom = last.offsetTop + last.offsetHeight;
+      const h = bottom - top;
+
+      const W = 16; // bracket width to the right of the column
+      const wrap = document.createElement('div');
+      wrap.className = 'tuplet-bracket';
+      wrap.style.top = top + 'px';
+      wrap.style.height = h + 'px';
+
+      const svg = document.createElementNS(SVGNS, 'svg');
+      svg.setAttribute('width', W);
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox', `0 0 ${W} ${h}`);
+      // a curve bowing to the right, covering the notes from top to bottom
+      const path = document.createElementNS(SVGNS, 'path');
+      path.setAttribute('d', `M 2 2 Q ${W - 1} ${h / 2} 2 ${h - 2}`);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#333');
+      path.setAttribute('stroke-width', '1.3');
+      svg.appendChild(path);
+      wrap.appendChild(svg);
+
+      const num = document.createElement('span');
+      num.className = 'tuplet-num';
+      num.textContent = n;
+      num.style.top = (h / 2) + 'px';
+      wrap.appendChild(num);
+
+      mEl.appendChild(wrap);
+      i = j + 1;
+    }
+  });
 }
 
 function makeSustainGlyph(kind) {

@@ -64,10 +64,26 @@
     <div class="cell-input-row">
       <span>現在のセル入力:</span>
       <input type="text" id="cell-input" autocomplete="off"
-             placeholder="例: haf  lbss  c,e,g  1=四分休符 2=八分休符 3,4=伸ばし w=ヲ o=オ">
+             placeholder="例: haf  lbss  c,e,g  1=四分休符 2=八分休符 3,4=伸ばし w=ヲ o=オ／Enter=半拍 Space=16分送り">
       <button id="prev-cell">←戻る</button>
       <button id="next-cell">空白送り</button>
       <button id="del-cell">削除</button>
+    </div>
+    <div class="tuplet-row">
+      <span>連符:</span>
+      <select id="tuplet-n">
+        <option value="3">3連符</option>
+        <option value="5">5連符</option>
+        <option value="7">7連符</option>
+      </select>
+      <select id="tuplet-beats">
+        <option value="1">1拍</option>
+        <option value="2">2拍</option>
+        <option value="3">3拍</option>
+        <option value="4">4拍</option>
+      </select>
+      <button id="tuplet-add">現在位置から連符を設定</button>
+      <button id="tuplet-clear">連符を解除</button>
     </div>
     <div id="score" class="score"></div>
   </section>
