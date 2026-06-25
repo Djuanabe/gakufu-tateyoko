@@ -70,7 +70,12 @@ body {
   background: #fffef7;
   padding: 0.6em;
   border: 1px solid #ccc;
-  height: 460px;            /* fixed viewport height */
+  /* Viewport sized so ~4 beats (one 4/4 measure) fit vertically,
+     in a 縦2 : 横3 (height : width) ratio. */
+  height: 480px;
+  width: 720px;
+  max-width: 100%;
+  align-self: flex-start;
   overflow-x: auto;
   overflow-y: auto;
   display: flex;
@@ -91,7 +96,7 @@ body {
 
 /* One measure = one vertical column. */
 .measure {
-  width: 44px;
+  width: 58px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -110,7 +115,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15em;
+  font-size: 1.45em;
   line-height: 1.0;
   overflow: hidden;
 }

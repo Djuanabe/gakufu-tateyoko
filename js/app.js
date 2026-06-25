@@ -49,6 +49,7 @@ function commitEnter(text, opts) {
   if (hint === 'empty') State.advanceHalfBeat();
   else if (hint === 'beat') State.advanceBeat();
   else State.advanceHalfBeat();
+  State.cursor.unit = 'half'; // Enter works in half-beat steps
   return true;
 }
 
@@ -65,11 +66,13 @@ function commitSpace(text, opts) {
       if (keepTuplet) cell.tuplet = keepTuplet;
     }
     if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
+    State.cursor.unit = 'quarter';
     return true;
   }
   const hint = applyInputToCell(text, opts);
   if (hint === 'error') return false;
   if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
+  State.cursor.unit = 'quarter'; // Space works in quarter-beat steps
   return true;
 }
 
@@ -113,8 +116,26 @@ const History = {
  *   - else -> move the cursor back one cell
  * So one Backspace steps back onto the last note, the next clears it. */
 function handleBackspace() {
-  // Backspace always steps back half a beat.
-  State.retreatHalfBeat();
+  const cell = State.currentCell();
+  const has = cell && (
+    (cell.notes && cell.notes.length > 0) || cell.rest || cell.sustain ||
+    cell.unconverted || (cell.left && cell.left.length > 0)
+  );
+  if (has) {
+    // A note name is shown here: delete it (a half-beat note clears its
+    // eighth; a quarter-beat note clears its sixteenth). Keep the cursor put
+    // and let its unit follow what was just removed.
+    History.push();
+    State.cursor.unit = State.noteUnitAt(State.cursor.measure, State.cursor.cell);
+    State.clearCurrentCell();
+    refresh();
+    return;
+  }
+  // Blank location: retreat by the cursor's current unit, then let the unit
+  // follow the note now under the cursor (blank => half-beat cursor).
+  if (State.cursor.unit === 'quarter') State.retreatSixteenth();
+  else State.retreatHalfBeat();
+  State.syncUnitToCell();
   refresh();
 }
 

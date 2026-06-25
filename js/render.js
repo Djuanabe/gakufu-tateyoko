@@ -19,7 +19,7 @@ const LEFT_MARK_GLYPH = { 'wo': 'ヲ', 'o': 'オ' };
 // Display sizes. Data is stored as sixteenth cells, but a sixteenth is only
 // shown at half size where it's actually used (via Space); otherwise an
 // eighth (= 2 sixteenths) is drawn at full size.
-const H8 = 40;        // eighth-note cell height (px)
+const H8 = 56;        // eighth-note cell height (px) — 4 beats (=8 eighths) ≈ viewport
 const H16 = H8 / 2;   // sixteenth-note cell height (px)
 
 function cellHasContent(c) {

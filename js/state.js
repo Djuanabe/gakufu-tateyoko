@@ -99,7 +99,9 @@ const State = {
     // constrained to horizontal or vertical. Coords are px within the system.
     drawings: []
   },
-  cursor: { measure: 0, cell: 0 },
+  // unit = the "length" the cursor currently represents: 'half' (eighth) or
+  // 'quarter' (sixteenth). It drives how far Backspace retreats over blanks.
+  cursor: { measure: 0, cell: 0, unit: 'half' },
 
   init() {
     // Start with 4 empty measures
@@ -182,7 +184,8 @@ const State = {
     for (let i = 0; i < steps; i++) this.advanceSixteenth();
   },
 
-  retreatHalfBeat() {
+  // Move one sixteenth (quarter-beat) cell backward, crossing measures.
+  retreatSixteenth() {
     if (this.cursor.cell > 0) {
       this.cursor.cell--;
     } else if (this.cursor.measure > 0) {
@@ -191,11 +194,39 @@ const State = {
     }
   },
 
+  // A half beat (eighth) = two sixteenth cells.
+  retreatHalfBeat() {
+    const ts = this.currentMeasure() ? this.currentMeasure().timeSignature : {den:4};
+    const steps = Math.max(1, Math.round(cellsPerBeat(ts.den) / 2)); // den=4 => 2
+    for (let i = 0; i < steps; i++) this.retreatSixteenth();
+  },
+
+  // The "length" of the note name occupying a cell: an eighth ('half') when it
+  // sits on an eighth boundary with an empty following sixteenth, otherwise a
+  // sixteenth ('quarter').
+  noteUnitAt(mIdx, cIdx) {
+    const m = this.sheet.measures[mIdx];
+    if (!m) return 'half';
+    if (cIdx % 2 === 1) return 'quarter';
+    const next = m.cells[cIdx + 1];
+    const nextHas = next && ((next.notes && next.notes.length) || next.rest || next.sustain || next.unconverted);
+    return nextHas ? 'quarter' : 'half';
+  },
+
+  // After a move, make the cursor's unit follow whatever note name is now under
+  // it (blank cell => half-beat cursor).
+  syncUnitToCell() {
+    const c = this.currentCell();
+    const has = c && ((c.notes && c.notes.length) || c.rest || c.sustain || c.unconverted);
+    this.cursor.unit = has ? this.noteUnitAt(this.cursor.measure, this.cursor.cell) : 'half';
+  },
+
   setCursor(mIdx, cIdx) {
     if (mIdx >= 0 && mIdx < this.sheet.measures.length) {
       this.cursor.measure = mIdx;
       const len = this.sheet.measures[mIdx].cells.length;
       this.cursor.cell = Math.max(0, Math.min(cIdx, len - 1));
+      this.syncUnitToCell();
     }
   },
 
@@ -328,7 +359,7 @@ const State = {
         }
         if (!obj.drawings) obj.drawings = [];
         this.sheet = obj;
-        this.cursor = {measure: 0, cell: 0};
+        this.cursor = {measure: 0, cell: 0, unit: 'half'};
         return true;
       }
     } catch (e) { console.warn('load failed', e); }
