@@ -1,21 +1,19 @@
 /* Render the tateyoko (vertical) score grid.
  *
- * Layout: Music reads right-to-left, top-to-bottom within a column.
- * For simplicity, we put all measures of the score in one flexbox row
- * (flex-direction: row-reverse, so first measure is rightmost).
- * Inside a measure: each column = 1 beat (for 4/4 = 4 columns); each column
- * contains halfBeatsPerBeat cells stacked vertically.
+ * Layout: Music reads right-to-left. Each MEASURE is one vertical column
+ * (so roughly one measure fits in a column, like real 縦譜). Cells stack
+ * top-to-bottom inside the measure column. Measures are laid out
+ * right-to-left in a "system".
  *
  * Each cell renders:
  *   - the chord (notes stacked vertically inside the cell)
- *   - any left-side ヲ/オ mark to the left of the note
+ *   - any left-side ヲ/オ mark to the LEFT of the kanji
  *   - rest symbol ○ (quarter), △ (eighth)
- *   - sustain mark ⊙ (or similar)
+ *   - sustain mark ◉ (quarter), △+• (eighth / half-beat)
  *   - unconverted: red placeholder with original pitch text
  */
 
 const REST_GLYPH = { quarter: '○', eighth: '△' };
-const SUSTAIN_GLYPH = { quarter: '◉', eighth: '◉' };
 const LEFT_MARK_GLYPH = { 'wo': 'ヲ', 'o': 'オ' };
 
 function renderScore(state) {
@@ -31,26 +29,19 @@ function renderScore(state) {
     mEl.dataset.measure = mIdx;
 
     const ts = m.timeSignature;
-    const halfBeatsPerBeat = Math.max(1, Math.round(8/ts.den)); // 4/4 -> 2
-    const beats = ts.num;
+    const halfBeatsPerBeat = Math.max(1, Math.round(8 / ts.den)); // 4/4 -> 2
 
-    for (let b = 0; b < beats; b++) {
-      const colEl = document.createElement('div');
-      colEl.className = 'column';
-      for (let h = 0; h < halfBeatsPerBeat; h++) {
-        const cellIdx = b * halfBeatsPerBeat + h;
-        const cell = m.cells[cellIdx];
-        const cEl = renderCell(cell, state.sheet.instrumentType);
-        cEl.dataset.measure = mIdx;
-        cEl.dataset.cell = cellIdx;
-        if (h === halfBeatsPerBeat - 1) cEl.classList.add('beat-end');
-        if (state.cursor.measure === mIdx && state.cursor.cell === cellIdx) {
-          cEl.classList.add('active');
-        }
-        colEl.appendChild(cEl);
+    m.cells.forEach((cell, cellIdx) => {
+      const cEl = renderCell(cell, state.sheet.instrumentType);
+      cEl.dataset.measure = mIdx;
+      cEl.dataset.cell = cellIdx;
+      // heavier line at the end of each beat
+      if ((cellIdx + 1) % halfBeatsPerBeat === 0) cEl.classList.add('beat-end');
+      if (state.cursor.measure === mIdx && state.cursor.cell === cellIdx) {
+        cEl.classList.add('active');
       }
-      mEl.appendChild(colEl);
-    }
+      mEl.appendChild(cEl);
+    });
     sys.appendChild(mEl);
   });
 
@@ -61,10 +52,31 @@ function renderScore(state) {
       const cIdx = parseInt(el.dataset.cell, 10);
       State.setCursor(mIdx, cIdx);
       renderScore(State);
-      document.getElementById('cell-input').focus();
-      document.getElementById('cell-input').value = '';
+      const inp = document.getElementById('cell-input');
+      inp.focus();
+      inp.value = '';
     });
   });
+}
+
+function makeSustainGlyph(kind) {
+  // quarter -> ◉ (circle with dot); eighth/half -> triangle with black dot
+  const wrap = document.createElement('span');
+  wrap.className = 'sustain';
+  if (kind === 'eighth') {
+    wrap.classList.add('tri-dot');
+    const tri = document.createElement('span');
+    tri.className = 'tri';
+    tri.textContent = '△';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.textContent = '●';
+    wrap.appendChild(tri);
+    wrap.appendChild(dot);
+  } else {
+    wrap.textContent = '◉';
+  }
+  return wrap;
 }
 
 function renderCell(cell, instrumentType) {
@@ -79,10 +91,7 @@ function renderCell(cell, instrumentType) {
     return el;
   }
   if (cell.sustain) {
-    const s = document.createElement('span');
-    s.className = 'sustain';
-    s.textContent = SUSTAIN_GLYPH[cell.sustain] || '◉';
-    el.appendChild(s);
+    el.appendChild(makeSustainGlyph(cell.sustain));
     return el;
   }
   if (cell.unconverted && (!cell.notes || cell.notes.length === 0)) {
@@ -96,25 +105,26 @@ function renderCell(cell, instrumentType) {
     return el;
   }
 
-  // Render notes stacked
+  // Render notes stacked top-to-bottom; each note is a row [mark][kanji].
   if (cell.notes && cell.notes.length > 0) {
     const stack = document.createElement('div');
     stack.className = 'stack';
     cell.notes.forEach(n => {
-      const wrap = document.createElement('div');
-      wrap.style.position = 'relative';
-      if (n.leftMark) {
-        const lm = document.createElement('span');
-        lm.className = 'left-mark';
-        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
-        wrap.appendChild(lm);
-      }
+      const row = document.createElement('div');
+      row.className = 'note-row';
+
+      const lm = document.createElement('span');
+      lm.className = 'left-mark';
+      lm.textContent = n.leftMark ? (LEFT_MARK_GLYPH[n.leftMark] || '') : '';
+      row.appendChild(lm);
+
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
+        label.className = 'kanji';
         label.textContent = stringLabel(instrumentType, n.stringIndex) || '?';
-        wrap.appendChild(label);
+        row.appendChild(label);
       }
-      stack.appendChild(wrap);
+      stack.appendChild(row);
     });
     el.appendChild(stack);
   }

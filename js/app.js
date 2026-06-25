@@ -44,6 +44,55 @@ function refresh() {
   renderScore(State);
 }
 
+/* Undo / redo: snapshot the whole sheet + cursor before each mutation. */
+const History = {
+  undoStack: [],
+  redoStack: [],
+  snapshot() {
+    return JSON.stringify({ sheet: State.sheet, cursor: State.cursor });
+  },
+  restore(snap) {
+    const obj = JSON.parse(snap);
+    State.sheet = obj.sheet;
+    State.cursor = obj.cursor;
+  },
+  push() {
+    this.undoStack.push(this.snapshot());
+    if (this.undoStack.length > 200) this.undoStack.shift();
+    this.redoStack = [];
+  },
+  undo() {
+    if (this.undoStack.length === 0) return;
+    this.redoStack.push(this.snapshot());
+    this.restore(this.undoStack.pop());
+    refresh();
+  },
+  redo() {
+    if (this.redoStack.length === 0) return;
+    this.undoStack.push(this.snapshot());
+    this.restore(this.redoStack.pop());
+    refresh();
+  }
+};
+
+/* Backspace behavior on an empty input box:
+ *   - if the current cell has content -> clear it (delete here)
+ *   - else -> move the cursor back one cell
+ * So one Backspace steps back onto the last note, the next clears it. */
+function handleBackspace() {
+  const cell = State.currentCell();
+  const hasContent = cell && (
+    (cell.notes && cell.notes.length > 0) || cell.rest || cell.sustain || cell.unconverted
+  );
+  History.push();
+  if (hasContent) {
+    State.clearCurrentCell();
+  } else {
+    State.retreatHalfBeat();
+  }
+  refresh();
+}
+
 function buildTuningTable() {
   const tbl = document.getElementById('tuning-table');
   tbl.innerHTML = '';
@@ -92,11 +141,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const input = document.getElementById('cell-input');
   input.addEventListener('keydown', (e) => {
+    // Undo / redo (Ctrl+Z / Ctrl+Y, and Ctrl+Shift+Z for redo)
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      History.undo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' ||
+        (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+      e.preventDefault();
+      History.redo();
+      return;
+    }
     if (e.key === 'Enter') {
       e.preventDefault();
+      History.push();
       commitInput(input.value);
       input.value = '';
       refresh();
+      return;
+    }
+    if (e.key === 'Backspace' && input.value === '') {
+      // empty box: step back / delete instead of editing text
+      e.preventDefault();
+      handleBackspace();
+      return;
     }
   });
 
@@ -109,20 +178,24 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh();
   });
   document.getElementById('del-cell').addEventListener('click', () => {
+    History.push();
     State.clearCurrentCell();
     refresh();
   });
   document.getElementById('add-measure').addEventListener('click', () => {
+    History.push();
     State.addMeasure();
     refresh();
   });
 
   document.getElementById('instrument-type').addEventListener('change', (e) => {
+    History.push();
     State.setInstrumentType(e.target.value);
     refresh();
   });
 
   document.getElementById('apply-ts').addEventListener('click', () => {
+    History.push();
     const num = parseInt(document.getElementById('ts-num').value, 10) || 4;
     const den = parseInt(document.getElementById('ts-den').value, 10) || 4;
     State.changeTimeSignatureFromHere(num, den);

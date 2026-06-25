@@ -62,7 +62,7 @@ function parseNoteToken(tok) {
     letter,
     accidental,
     doubleShift,            // for ss/ff, add extra semitone
-    octavePref: pref || '', // h | m | l | ''
-    octave: null            // not yet specified
+    octavePref: pref || 'm', // h | m | l ; no prefix defaults to m (middle)
+    octave: null             // not yet specified
   };
 }
