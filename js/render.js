@@ -109,6 +109,13 @@ function renderCell(cell, instrumentType) {
   if (cell.notes && cell.notes.length > 0) {
     const stack = document.createElement('div');
     stack.className = 'stack';
+    // shrink chords so they never overflow the cell (squishing is OK)
+    const n = cell.notes.length;
+    if (n > 1) {
+      const scale = Math.max(0.4, 1 / Math.sqrt(n));
+      stack.style.fontSize = (1.15 * scale) + 'em';
+      stack.style.lineHeight = '0.9';
+    }
     cell.notes.forEach(n => {
       const row = document.createElement('div');
       row.className = 'note-row';
