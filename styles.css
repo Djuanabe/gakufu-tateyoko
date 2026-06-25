@@ -216,13 +216,13 @@ body {
 
 /* Beat divider: full-width heavy line. No sixteenth lines at all. */
 .cell.beat-end { border-bottom: 2px solid #444; }
-/* Eighth divider: medium line at 3/4 width, centered. */
+/* Eighth divider (half-beat): short line, 1/4 of the frame width, flush left. */
 .cell.eighth-end::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 12.5%;
-  width: 75%;
+  left: 0;
+  width: 25%;
   height: 1px;
   background: #888;
 }
