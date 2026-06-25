@@ -94,13 +94,21 @@
 <div id="tuning-modal" class="modal hidden">
   <div class="modal-content">
     <h2>調弦表</h2>
-    <p>各絃に対応する音名を入力してください（例: <code>lc</code>=低C, <code>md</code>=中D, <code>hg</code>=高G。範囲外は <code>d6</code> のようにオクターブ番号で）。</p>
+    <p>各絃に対応する音名を入力してください（例: <code>3c</code>, <code>4d</code>, <code>5gs</code>, <code>6ef</code>）。<br>
+    または下の五線譜で音符を選び（クリック / 矢印キー＋「選択追加」）、必要数そろえて「決定」すると低い順に一・二…へ自動入力します。</p>
     <div class="tuning-sections">
       <label>編集する調弦区間:
         <select id="tuning-section"></select>
       </label>
       <button id="tuning-add">現在の小節から調弦変更を追加</button>
       <button id="tuning-remove">この区間を削除</button>
+    </div>
+    <div class="tuning-staff-pick">
+      <button id="tuning-staff-add">選択追加</button>
+      <button id="tuning-staff-undo">取消(1つ)</button>
+      <button id="tuning-staff-reset">クリア</button>
+      <button id="tuning-staff-apply">決定（低い順に割当）</button>
+      <span id="tuning-staff-count"></span>
     </div>
     <table id="tuning-table"></table>
     <div class="modal-actions">

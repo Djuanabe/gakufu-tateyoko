@@ -199,7 +199,11 @@ function renderStaff() {
     const noteIdx = staffNotes.length;
     hit.addEventListener('mouseenter', () => head.classList.add('hover'));
     hit.addEventListener('mouseleave', () => head.classList.remove('hover'));
-    hit.addEventListener('click', () => { staffSel = noteIdx; highlightStaffSel(); appendToCellInput(token); });
+    hit.addEventListener('click', () => {
+      staffSel = noteIdx; highlightStaffSel();
+      if (typeof onStaffPick === 'function') onStaffPick(token);
+      else appendToCellInput(token);
+    });
     svg.appendChild(hit);
 
     staffNotes.push({ token, octave: p.octave, midi: pitchToMidi({letter: p.letter, accidental, octave: p.octave}), head });

@@ -137,9 +137,52 @@ function openTuningModal() {
     if (t.fromMeasure <= State.cursor.measure) from = t.fromMeasure; else break;
   }
   editingTuningFrom = from;
+  tuningPick = [];
+  updateTuningCount();
   buildTuningSections();
   buildTuningTable();
   document.getElementById('tuning-modal').classList.remove('hidden');
+}
+
+/* Staff-based tuning entry: pick notes on the sample staff, then 決定 assigns
+ * them (sorted low -> high) to strings 一, 二, ... */
+let tuningPick = []; // [{letter, accidental, octave, midi}]
+function tuningModalOpen() {
+  return !document.getElementById('tuning-modal').classList.contains('hidden');
+}
+function onStaffPick(token) {
+  if (tuningModalOpen()) addTuningPick(token);
+  else appendToCellInput(token);
+}
+function addTuningPick(token) {
+  if (!token) return;
+  const note = parseNoteToken(token.toLowerCase());
+  if (!note) return;
+  const pitch = { letter: note.letter, accidental: note.accidental, octave: note.octave };
+  tuningPick.push({ ...pitch, midi: pitchToMidi(pitch) });
+  updateTuningCount();
+}
+function updateTuningCount() {
+  const need = stringCount(State.sheet.instrumentType);
+  const el = document.getElementById('tuning-staff-count');
+  if (el) el.textContent = `選択 ${tuningPick.length} / ${need}`;
+}
+function applyTuningPick() {
+  const need = stringCount(State.sheet.instrumentType);
+  if (tuningPick.length !== need) {
+    alert(`${need}個の音符を選んでください（現在 ${tuningPick.length} 個）`);
+    return;
+  }
+  History.push();
+  const sorted = [...tuningPick].sort((a, b) => a.midi - b.midi);
+  currentTuningEntry().tuning = sorted.map(p => ({
+    letter: p.letter, accidental: p.accidental, octave: p.octave, midi: p.midi
+  }));
+  tuningPick = [];
+  updateTuningCount();
+  buildTuningTable();
+  State.reconvertAll();
+  refresh();
 }
 
 function buildTuningSections() {
@@ -353,6 +396,26 @@ document.addEventListener('DOMContentLoaded', () => {
     buildTuningTable();
     State.reconvertAll();
     refresh();
+  });
+
+  document.getElementById('tuning-staff-add').addEventListener('click', () => {
+    addTuningPick(selectedStaffToken());
+  });
+  document.getElementById('tuning-staff-undo').addEventListener('click', () => {
+    tuningPick.pop(); updateTuningCount();
+  });
+  document.getElementById('tuning-staff-reset').addEventListener('click', () => {
+    tuningPick = []; updateTuningCount();
+  });
+  document.getElementById('tuning-staff-apply').addEventListener('click', applyTuningPick);
+
+  // Arrow keys move the staff selection while the tuning modal is open
+  // (unless a text input has focus, where arrows move the caret).
+  document.addEventListener('keydown', (e) => {
+    if (!tuningModalOpen()) return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); moveStaffSel(+1); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); moveStaffSel(-1); }
   });
 
   document.getElementById('save').addEventListener('click', () => {
