@@ -202,10 +202,10 @@ function letterStepNearMiddle(letter, clef) {
 }
 
 function octavePrefForStaff(octave, clef) {
-  const baseOct = clef === 'treble' ? 5 : 3;
-  if (octave > baseOct) return 'h';
-  if (octave < baseOct) return 'l';
-  return 'm';
+  // C-delimited bands: octave 3 -> l, 4 -> m, 5+ -> h, 2- -> l.
+  if (octave <= 3) return 'l';
+  if (octave === 4) return 'm';
+  return 'h';
 }
 
 function appendToCellInput(token) {

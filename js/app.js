@@ -99,7 +99,7 @@ function buildTuningTable() {
   const tbl = document.getElementById('tuning-table');
   tbl.innerHTML = '';
   const head = document.createElement('tr');
-  head.innerHTML = '<th>絃</th><th>音名（例: lc, md, hgs）</th><th>現在の音</th>';
+  head.innerHTML = '<th>絃</th><th>音名（例: lc, md, hg / 範囲外は d6, ef6）</th><th>現在の音</th>';
   tbl.appendChild(head);
   const type = State.sheet.instrumentType;
   State.sheet.tuning.forEach((s, idx) => {
@@ -108,16 +108,15 @@ function buildTuningTable() {
     tdLabel.textContent = stringLabel(type, idx);
     const tdInput = document.createElement('td');
     const inp = document.createElement('input');
-    const cur = `${octavePrefFor(s.octave)}${s.letter.toLowerCase()}${s.accidental || ''}`;
+    const cur = tuningPitchToText(s);
     inp.value = cur;
     inp.addEventListener('change', () => {
-      const note = parseNoteToken(inp.value.trim().toLowerCase());
-      if (!note) { alert('入力形式が不正です'); inp.value = cur; return; }
-      const oct = octaveFromPref(note.octavePref, note.letter);
-      const pitch = {letter: note.letter, accidental: note.accidental, octave: oct};
+      const pitch = parseTuningPitch(inp.value.trim().toLowerCase());
+      if (!pitch) { alert('入力形式が不正です'); inp.value = cur; return; }
       History.push();
       State.sheet.tuning[idx] = {...pitch, midi: pitchToMidi(pitch)};
       tdMidi.textContent = pitchToMidi(pitch);
+      inp.value = tuningPitchToText(State.sheet.tuning[idx]);
       State.reconvertAll();
       refresh();
     });
@@ -129,16 +128,50 @@ function buildTuningTable() {
   });
 }
 
+/* Octave bands are delimited at C, one octave per prefix:
+ *   l = octave 3 (C3..B3), m = octave 4 (C4..B4), h = octave 5 (C5..B5).
+ * Octaves outside 3..5 have no prefix and use an explicit octave digit. */
 function octavePrefFor(octave) {
-  if (octave >= 6) return 'h';
-  if (octave <= 3) return 'l';
-  return 'm';   // 4-5 -> m
+  if (octave === 3) return 'l';
+  if (octave === 4) return 'm';
+  if (octave === 5) return 'h';
+  return null; // outside l/m/h range -> use explicit octave digit
 }
-function octaveFromPref(pref, letter) {
-  // l=3, m=4, h=6 (matches the koto default tuning's octave layout)
-  if (pref === 'h') return 6;
+function octaveFromPref(pref) {
   if (pref === 'l') return 3;
-  return 4;
+  if (pref === 'h') return 5;
+  return 4; // m or none
+}
+
+// Display a tuning pitch: prefix form when in 3..5, else explicit octave.
+function tuningPitchToText(s) {
+  const pref = octavePrefFor(s.octave);
+  const body = s.letter.toLowerCase() + (s.accidental || '');
+  return pref ? pref + body : body + s.octave;
+}
+
+// Parse a tuning pitch: either "[hml]?letter[acc]" or "letter[acc]<octave>".
+function parseTuningPitch(str) {
+  // explicit octave form, e.g. "d6", "ef6", "gs2"
+  let m = /^([a-g])(ss|ff|s|f|n)?(\d+)$/i.exec(str);
+  if (m) {
+    return {
+      letter: m[1].toUpperCase(),
+      accidental: normAcc(m[2]),
+      octave: parseInt(m[3], 10)
+    };
+  }
+  // prefix form, e.g. "lc", "md", "hg"
+  const note = parseNoteToken(str);
+  if (!note) return null;
+  return { letter: note.letter, accidental: note.accidental, octave: octaveFromPref(note.octavePref) };
+}
+
+function normAcc(raw) {
+  raw = (raw || '').toLowerCase();
+  if (raw === 's' || raw === 'ss') return 's';
+  if (raw === 'f' || raw === 'ff') return 'f';
+  return '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
