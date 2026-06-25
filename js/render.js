@@ -287,8 +287,10 @@ function renderCell(cell, instrumentType) {
     if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
     if (notes.length > 1) {
       // Chord notes side-by-side: keep the glyph height, squeeze them
-      // horizontally (from the sides) so each stays tall/vertical.
-      stack.style.transform = `scaleX(${(1 / notes.length).toFixed(3)})`;
+      // horizontally (from the sides) so each stays tall/vertical. Gentle
+      // coefficient (0.5) so notes don't get too thin: 2音→0.67, 3音→0.5.
+      const sx = 1 / (1 + (notes.length - 1) * 0.5);
+      stack.style.transform = `scaleX(${sx.toFixed(3)})`;
       stack.style.transformOrigin = 'center';
     }
     const addText = txt => {
