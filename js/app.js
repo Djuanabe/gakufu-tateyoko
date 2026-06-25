@@ -21,7 +21,9 @@ function commitInput(text) {
   }
   if (parsed.type === 'sustain') {
     Object.assign(cell, { sustain: parsed.value, rest: null, notes: [], unconverted: null });
-    State.advanceHalfBeat();
+    // quarter sustain (3) advances a full beat; eighth (4) advances half a beat
+    if (parsed.value === 'quarter') State.advanceBeat();
+    else State.advanceHalfBeat();
     return;
   }
   if (parsed.type === 'mark') {

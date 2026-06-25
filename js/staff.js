@@ -26,8 +26,10 @@ const FLAT_ORDER = ['B','E','A','D','G','C','F'];
 const NS = 'http://www.w3.org/2000/svg';
 
 // step 0 = bottom staff line. Each step = half a line gap (one diatonic letter).
-function stepToY(step) {
-  return STAFF.topLine + 4 * STAFF.lineGap - step * (STAFF.lineGap / 2);
+// rowTop is the y of the top staff line of the row being drawn.
+function stepToY(step, rowTop) {
+  const top = (rowTop == null) ? STAFF.topLine : rowTop;
+  return top + 4 * STAFF.lineGap - step * (STAFF.lineGap / 2);
 }
 
 function stepToPitch(step, clef) {
@@ -53,6 +55,42 @@ function line(svg, x1, y1, x2, y2, color, w) {
   return l;
 }
 
+// Range of diatonic steps shown, extended by one octave (7 steps) up and down.
+const STAFF_LOW_STEP = -9;
+const STAFF_HIGH_STEP = 17;
+const STAFF_ROW_GAP = 150; // vertical distance between stacked staff rows
+
+function drawStaffRow(svg, rowTop, clef, flats) {
+  // 5 staff lines
+  for (let i = 0; i < 5; i++) {
+    const y = rowTop + i * STAFF.lineGap;
+    line(svg, 30, y, STAFF.width - 10, y, '#222', 1);
+  }
+  // Clef glyph
+  const clefText = document.createElementNS(NS, 'text');
+  clefText.setAttribute('x', 34);
+  clefText.setAttribute('y', clef === 'treble' ? rowTop + 78 : rowTop + 42);
+  clefText.setAttribute('font-size', clef === 'treble' ? '78' : '58');
+  clefText.setAttribute('font-family', 'serif');
+  clefText.textContent = clef === 'treble' ? '𝄞' : '𝄢';
+  svg.appendChild(clefText);
+
+  // Key signature flats
+  let kx = 78;
+  FLAT_ORDER.forEach(l => {
+    if (!flats.has(l)) return;
+    const step = letterStepNearMiddle(l, clef);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', kx);
+    t.setAttribute('y', stepToY(step, rowTop) + 6);
+    t.setAttribute('font-size', '22');
+    t.textContent = '♭';
+    svg.appendChild(t);
+    kx += 12;
+  });
+  return kx; // x after the key signature
+}
+
 function renderStaff() {
   const svg = document.getElementById('staff-svg');
   svg.innerHTML = '';
@@ -60,43 +98,35 @@ function renderStaff() {
   const keySig = parseInt(document.getElementById('key-sig').value, 10) || 0;
   const flats = flatAccidentalsFor(keySig);
 
-  // 5 staff lines
-  for (let i = 0; i < 5; i++) {
-    const y = STAFF.topLine + i * STAFF.lineGap;
-    line(svg, 30, y, STAFF.width - 10, y, '#222', 1);
+  // Figure out how many notes fit per row (so we can wrap to a 2nd row).
+  // Draw one row's clef+keysig off-screen first just to learn startX.
+  const probeKx = 78 + [...flats].length * 12;
+  const startX = probeKx + STAFF.noteStartPad;
+  const maxX = STAFF.width - 14;
+  const perRow = Math.max(1, Math.floor((maxX - startX) / STAFF.noteSpacing) + 1);
+
+  const totalNotes = STAFF_HIGH_STEP - STAFF_LOW_STEP + 1;
+  const rows = Math.ceil(totalNotes / perRow);
+
+  // Resize the SVG viewBox to fit all rows.
+  const totalHeight = STAFF.topLine + (rows - 1) * STAFF_ROW_GAP + 4 * STAFF.lineGap + 50;
+  svg.setAttribute('viewBox', `0 0 ${STAFF.width} ${totalHeight}`);
+
+  // Draw each row's staff background.
+  for (let r = 0; r < rows; r++) {
+    const rowTop = STAFF.topLine + r * STAFF_ROW_GAP;
+    drawStaffRow(svg, rowTop, clef, flats);
   }
 
-  // Clef glyph
-  const clefText = document.createElementNS(NS, 'text');
-  clefText.setAttribute('x', 34);
-  clefText.setAttribute('y', clef === 'treble' ? STAFF.topLine + 78 : STAFF.topLine + 42);
-  clefText.setAttribute('font-size', clef === 'treble' ? '78' : '58');
-  clefText.setAttribute('font-family', 'serif');
-  clefText.textContent = clef === 'treble' ? '𝄞' : '𝄢';
-  svg.appendChild(clefText);
-
-  // Key signature flats (place near each letter's staff position)
-  let kx = 78;
-  FLAT_ORDER.forEach(l => {
-    if (!flats.has(l)) return;
-    // find a staff position for this letter near the middle of the staff
-    const step = letterStepNearMiddle(l, clef);
-    const t = document.createElementNS(NS, 'text');
-    t.setAttribute('x', kx);
-    t.setAttribute('y', stepToY(step) + 6);
-    t.setAttribute('font-size', '22');
-    t.textContent = '♭';
-    svg.appendChild(t);
-    kx += 12;
-  });
-
-  // Lay out a diatonic run of note heads (low -> high, left -> right)
-  const startX = kx + STAFF.noteStartPad;
-  const lowStep = -2, highStep = 10;
-  let x = startX;
-  for (let s = lowStep; s <= highStep; s++) {
-    const y = stepToY(s);
-    drawLedgersForStep(svg, x, s);
+  // Lay out the diatonic run, wrapping into rows.
+  let i = 0;
+  for (let s = STAFF_LOW_STEP; s <= STAFF_HIGH_STEP; s++, i++) {
+    const r = Math.floor(i / perRow);
+    const col = i % perRow;
+    const rowTop = STAFF.topLine + r * STAFF_ROW_GAP;
+    const x = startX + col * STAFF.noteSpacing;
+    const y = stepToY(s, rowTop);
+    drawLedgersForStep(svg, x, s, rowTop);
 
     const p = stepToPitch(s, clef);
     const accidental = flats.has(p.letter) ? 'f' : '';
@@ -111,7 +141,6 @@ function renderStaff() {
     head.setAttribute('class', 'staff-note');
     svg.appendChild(head);
 
-    // flat sign in front of the note if key signature flats it
     if (accidental === 'f') {
       const fl = document.createElementNS(NS, 'text');
       fl.setAttribute('x', x - 16);
@@ -122,21 +151,21 @@ function renderStaff() {
       svg.appendChild(fl);
     }
 
-    // label below the staff
+    // label below the staff row
     const pref = octavePrefForStaff(p.octave, clef);
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', x);
-    lbl.setAttribute('y', STAFF.topLine + 4 * STAFF.lineGap + 38);
+    lbl.setAttribute('y', rowTop + 4 * STAFF.lineGap + 38);
     lbl.setAttribute('font-size', '10');
     lbl.setAttribute('text-anchor', 'middle');
     lbl.setAttribute('fill', '#777');
     lbl.textContent = p.letter + (accidental === 'f' ? '♭' : '') + p.octave;
     svg.appendChild(lbl);
 
-    // click target: a transparent rect over the column
+    // click target
     const hit = document.createElementNS(NS, 'rect');
     hit.setAttribute('x', x - STAFF.noteSpacing / 2);
-    hit.setAttribute('y', STAFF.topLine - 25);
+    hit.setAttribute('y', rowTop - 25);
     hit.setAttribute('width', STAFF.noteSpacing);
     hit.setAttribute('height', 4 * STAFF.lineGap + 70);
     hit.setAttribute('fill', 'transparent');
@@ -146,22 +175,19 @@ function renderStaff() {
     hit.addEventListener('mouseleave', () => head.classList.remove('hover'));
     hit.addEventListener('click', () => appendToCellInput(token));
     svg.appendChild(hit);
-
-    x += STAFF.noteSpacing;
   }
 }
 
-// Draw ledger lines for notes that sit outside the 5-line staff.
-function drawLedgersForStep(svg, x, step) {
-  // staff lines are at even steps 0..8. Below 0 or above 8 need ledgers.
+// Draw ledger lines for notes that sit outside the 5-line staff row.
+function drawLedgersForStep(svg, x, step, rowTop) {
   if (step < 0) {
     for (let s = -2; s >= step; s -= 2) {
-      const y = stepToY(s);
+      const y = stepToY(s, rowTop);
       line(svg, x - 11, y, x + 11, y, '#888', 1);
     }
   } else if (step > 8) {
     for (let s = 10; s <= step; s += 2) {
-      const y = stepToY(s);
+      const y = stepToY(s, rowTop);
       line(svg, x - 11, y, x + 11, y, '#888', 1);
     }
   }

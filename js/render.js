@@ -125,12 +125,12 @@ function renderCell(cell, instrumentType) {
     return el;
   }
 
-  // Render notes stacked top-to-bottom; each note is a row [mark][kanji].
+  // Render notes side-by-side (chord = horizontal); each note is [mark][kanji].
   if (cell.notes && cell.notes.length > 0) {
     const stack = document.createElement('div');
-    stack.className = 'stack';
-    // shrink chords so they never overflow the cell (squishing is OK)
     const n = cell.notes.length;
+    stack.className = 'stack ' + (n > 1 ? 'chord' : 'single');
+    // shrink chords so they never overflow the cell (squishing is OK)
     if (n > 1) {
       const scale = Math.max(0.4, 1 / Math.sqrt(n));
       stack.style.fontSize = (1.15 * scale) + 'em';
