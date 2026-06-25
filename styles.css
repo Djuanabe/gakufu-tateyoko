@@ -1,0 +1,167 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
+  background: #f6f4ee;
+  color: #222;
+}
+.topbar {
+  background: #2d2a26;
+  color: #f4ecd8;
+  padding: 0.6em 1em;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  flex-wrap: wrap;
+}
+.topbar h1 { font-size: 1.1em; margin: 0; }
+.controls { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; font-size: 0.9em; }
+.controls button, .controls select, .controls input {
+  background: #f4ecd8; color: #222; border: 1px solid #555; padding: 0.2em 0.5em; border-radius: 3px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 0.5em;
+  padding: 0.5em;
+  min-height: calc(100vh - 60px);
+}
+
+.staff-panel {
+  background: #fff;
+  border: 1px solid #999;
+  padding: 0.6em;
+  position: sticky;
+  top: 0.5em;
+  align-self: start;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+.staff-panel h2 { font-size: 1em; margin: 0 0 0.4em; }
+.staff-controls { display: flex; gap: 0.6em; font-size: 0.85em; margin-bottom: 0.3em; }
+#staff-svg { width: 100%; height: auto; background: #fffef7; border: 1px solid #ddd; }
+.hint { font-size: 0.75em; color: #555; line-height: 1.4; margin-top: 0.4em; }
+
+.editor-panel {
+  background: #fff;
+  border: 1px solid #999;
+  padding: 0.6em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+.cell-input-row {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  font-size: 0.9em;
+}
+#cell-input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 1em;
+  padding: 0.3em 0.4em;
+  border: 1px solid #888;
+  border-radius: 3px;
+}
+
+.score {
+  background: #fffef7;
+  padding: 0.6em;
+  border: 1px solid #ccc;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 4px;
+  min-height: 700px;
+  writing-mode: horizontal-tb;
+}
+
+/* Each "system" is one horizontal row of music (right-to-left columns). */
+.system {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0;
+  border: 2px solid #222;
+  background: #fffef7;
+}
+.measure {
+  display: flex;
+  flex-direction: row-reverse;
+  position: relative;
+}
+.measure + .measure { border-right: 4px double #222; }
+
+.column {
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #aaa;
+}
+.column:first-child { border-right: none; }
+
+.cell {
+  flex: 1 0 38px;
+  border-bottom: 1px solid #aaa;
+  position: relative;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 1.3em;
+  line-height: 1.05;
+  min-height: 38px;
+}
+.cell:last-child { border-bottom: none; }
+.cell.active { background: #ffe7a8; outline: 2px solid #c98a14; }
+.cell.unconverted { background: #ffe1e1; }
+
+.cell .stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cell .left-mark {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6em;
+  color: #444;
+}
+.cell .sustain { font-size: 1.2em; }
+.cell .rest { font-size: 1em; color: #333; }
+.cell .unknown { color: #c0392b; font-size: 0.8em; }
+
+/* Beat divider (every 2 cells = 1 beat) - heavier line */
+.cell.beat-end { border-bottom: 2px solid #444; }
+.column.beat-end { border-right: 2px solid #444; }
+
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: #fff;
+  padding: 1.2em;
+  border-radius: 6px;
+  max-width: 90vw; max-height: 90vh;
+  overflow: auto;
+  min-width: 480px;
+}
+#tuning-table { border-collapse: collapse; margin-top: 0.8em; }
+#tuning-table th, #tuning-table td { border: 1px solid #999; padding: 0.3em 0.5em; text-align: center; }
+#tuning-table input { width: 5em; font-family: inherit; }
+.modal-actions { margin-top: 1em; display: flex; gap: 0.4em; justify-content: flex-end; }
+
+.staff-note { fill: #222; cursor: pointer; }
+.staff-note:hover { fill: #c98a14; }
+.staff-hover-marker { fill: rgba(201,138,20,0.5); pointer-events: none; }

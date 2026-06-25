@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>楽譜縦譜変換</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>五線譜 → 縦譜 変換</h1>
+  <div class="controls">
+    <label>楽器:
+      <select id="instrument-type">
+        <option value="13">箏 (13絃)</option>
+        <option value="17">十七絃</option>
+      </select>
+    </label>
+    <label>拍子:
+      <input type="number" id="ts-num" value="4" min="1" max="16" style="width:3em"> /
+      <input type="number" id="ts-den" value="4" min="1" max="16" style="width:3em">
+      <button id="apply-ts">この小節以降に適用</button>
+    </label>
+    <button id="add-measure">小節追加</button>
+    <button id="open-tuning">調弦表</button>
+    <button id="save">保存</button>
+    <button id="load">読込</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="staff-panel">
+    <h2>五線譜サンプル（クリックで音名入力）</h2>
+    <div class="staff-controls">
+      <label>調号:
+        <select id="key-sig">
+          <option value="0">なし (C)</option>
+          <option value="-1">♭1 (F)</option>
+          <option value="-2">♭2 (B♭)</option>
+          <option value="-3">♭3 (E♭)</option>
+          <option value="-4">♭4 (A♭)</option>
+          <option value="-5">♭5 (D♭)</option>
+          <option value="-6">♭6 (G♭)</option>
+          <option value="-7">♭7 (C♭)</option>
+        </select>
+      </label>
+      <label>音部記号:
+        <select id="clef">
+          <option value="treble">ト音</option>
+          <option value="bass">ヘ音</option>
+        </select>
+      </label>
+    </div>
+    <svg id="staff-svg" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet"></svg>
+    <p class="hint">五線譜上の音符位置をクリックすると、現在編集中のセルに音名が入力されます。<br>
+    シャープ/フラット/ナチュラル は入力欄で s / f / n を加えて指定してください。</p>
+  </section>
+
+  <section class="editor-panel">
+    <div class="cell-input-row">
+      <span>現在のセル入力:</span>
+      <input type="text" id="cell-input" autocomplete="off"
+             placeholder="例: haf  lbss  c,e,g  1=四分休符 2=八分休符 3,4=伸ばし w=ヲ o=オ">
+      <button id="prev-cell">←戻る</button>
+      <button id="next-cell">空白送り</button>
+      <button id="del-cell">削除</button>
+    </div>
+    <div id="score" class="score"></div>
+  </section>
+</main>
+
+<div id="tuning-modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>調弦表</h2>
+    <p>各絃に対応する音名を入力してください（例: <code>lc</code>=低C, <code>md</code>=中D, <code>hgs</code>=高G♯）。</p>
+    <table id="tuning-table"></table>
+    <div class="modal-actions">
+      <button id="tuning-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/tuning.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/staff.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
