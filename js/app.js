@@ -28,10 +28,9 @@ function applyInputToCell(text, opts) {
     return 'half';
   }
   if (parsed.type === 'composite') {
-    const centerNotes = parsed.center.filter(i => i.kind === 'note').map(i => i.pitch);
-    applyChord(cell, centerNotes, State.tuningForCursor()); // sets notes + unconverted
-    cell.centerText = parsed.center.filter(i => i.kind === 'text').map(i => i.str);
-    cell.left = parsed.left.map(i => i.str);
+    applyChord(cell, parsed.notes, State.tuningForCursor()); // sets notes + unconverted
+    cell.left = parsed.left;        // katakana/text symbols, placed to the left
+    cell.centerText = [];
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
     cell.circled = circle; // 和音もまとめて○で囲む

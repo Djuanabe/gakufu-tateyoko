@@ -33,38 +33,25 @@ function toKatakana(s) {
   return s.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
 }
 
-const SEP_RE = /[,、 　]+/; // comma, 、, half/full-width space
-
-function parseItems(str, isCenter) {
-  if (!str) return [];
-  const out = [];
-  for (const tok of str.split(SEP_RE).filter(Boolean)) {
-    const note = isCenter ? parseNoteToken(tok.toLowerCase()) : null;
-    if (note) out.push({ kind: 'note', pitch: note });
-    else out.push({ kind: 'text', str: toKatakana(tok) });
-  }
-  return out;
-}
+const SEP_RE = /[,、 　]+/; // comma, 読点, half/full-width space (all = separators)
 
 function parseCellInput(text) {
-  const raw = (text || '');
-  const t = raw.trim();
+  const t = (text || '').trim();
   if (!t) return {type: 'empty'};
 
   const low = t.toLowerCase();
   if (SPECIAL_TOKENS[low]) return SPECIAL_TOKENS[low];
 
-  // Split center / left at the first space or 読点.
-  const m = /[ 　、]/.exec(t);
-  let centerStr, leftStr;
-  if (m) { centerStr = t.slice(0, m.index); leftStr = t.slice(m.index + 1); }
-  else { centerStr = t; leftStr = ''; }
-
-  return {
-    type: 'composite',
-    center: parseItems(centerStr, true),
-    left: parseItems(leftStr, false)
-  };
+  // Tokens: note tokens form the chord (center); any non-note token is a
+  // katakana/text symbol placed to the LEFT (like ヲ/オ), at note size.
+  const notes = [];
+  const left = [];
+  for (const tok of t.split(SEP_RE).filter(Boolean)) {
+    const note = parseNoteToken(tok.toLowerCase());
+    if (note) notes.push(note);
+    else left.push(toKatakana(tok));
+  }
+  return { type: 'composite', notes, left };
 }
 
 function parseNoteToken(tok) {

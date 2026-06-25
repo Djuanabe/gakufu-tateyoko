@@ -265,10 +265,11 @@ function renderCell(cell, instrumentType) {
     return el;
   }
 
-  // Center content = chord notes + literal text, laid out side by side.
+  // One horizontal row: [katakana/text symbols (left)] then [chord notes].
+  // Katakana/text are the same size as note names and sit to the LEFT, like ヲ/オ.
   const notes = cell.notes || [];
-  const centerText = cell.centerText || [];
-  const total = notes.length + centerText.length;
+  const leftText = cell.left || [];
+  const total = notes.length + leftText.length;
   if (total > 0) {
     const stack = document.createElement('div');
     const hasMark = notes.some(x => x.leftMark);
@@ -279,6 +280,16 @@ function renderCell(cell, instrumentType) {
       stack.style.fontSize = (1.15 * scale) + 'em';
       stack.style.lineHeight = '0.9';
     }
+    // left-side katakana/text symbols first (so they render to the left)
+    leftText.forEach(txt => {
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      const label = document.createElement('span');
+      label.className = 'kanji';
+      label.textContent = txt;
+      row.appendChild(label);
+      stack.appendChild(row);
+    });
     notes.forEach(n => {
       const row = document.createElement('div');
       row.className = 'note-row';
@@ -300,29 +311,7 @@ function renderCell(cell, instrumentType) {
       }
       stack.appendChild(row);
     });
-    // literal text items (katakana / arbitrary text), centered like a kanji
-    centerText.forEach(txt => {
-      const row = document.createElement('div');
-      row.className = 'note-row';
-      const label = document.createElement('span');
-      label.className = 'kanji center-text';
-      label.textContent = txt;
-      row.appendChild(label);
-      stack.appendChild(row);
-    });
     el.appendChild(stack);
-  }
-
-  // Left-side annotations (katakana/text after a separator), stacked vertically.
-  if (cell.left && cell.left.length > 0) {
-    const lcol = document.createElement('div');
-    lcol.className = 'cell-left';
-    cell.left.forEach(txt => {
-      const s = document.createElement('span');
-      s.textContent = txt;
-      lcol.appendChild(s);
-    });
-    el.appendChild(lcol);
   }
 
   // Append any partially-unconverted notes as red text alongside
