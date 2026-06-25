@@ -36,15 +36,15 @@ function stringLabel(type, idx) {
 // 一 D4, 二 G4, 三 A4, 四 A♯4(B♭4), 五 D5, 六 E♭5, 七 G5, 八 A5, 九 B♭5, 十 D6, 斗 E♭6, 為 G6, 巾 A6
 function defaultTuning13() {
   const pitches = [
+    {letter:'D', accidental:'', octave:3},
+    {letter:'G', accidental:'', octave:3},
+    {letter:'A', accidental:'', octave:3},
+    {letter:'B', accidental:'f', octave:3},
     {letter:'D', accidental:'', octave:4},
+    {letter:'E', accidental:'f', octave:4},
     {letter:'G', accidental:'', octave:4},
     {letter:'A', accidental:'', octave:4},
     {letter:'B', accidental:'f', octave:4},
-    {letter:'D', accidental:'', octave:5},
-    {letter:'E', accidental:'f', octave:5},
-    {letter:'G', accidental:'', octave:5},
-    {letter:'A', accidental:'', octave:5},
-    {letter:'B', accidental:'f', octave:5},
     {letter:'D', accidental:'', octave:6},
     {letter:'E', accidental:'f', octave:6},
     {letter:'G', accidental:'', octave:6},

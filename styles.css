@@ -146,9 +146,20 @@ body {
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
+  display: inline-block;
+  min-width: 1em;
+  text-align: center;
+}
+/* Empty placeholder used when a row has only a ヲ/オ mark — keeps the same
+   width as a kanji so the mark sits at the same left-of-center spot. */
+.cell .note-row .kanji-spacer {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 1em;
 }
 /* keep a single note visually centered despite its left mark */
-.cell .stack.single .note-row .kanji { margin-right: 0.9em; }
+.cell .stack.single .note-row .kanji,
+.cell .stack.single .note-row .kanji-spacer { margin-right: 0.6em; }
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {
   position: relative;

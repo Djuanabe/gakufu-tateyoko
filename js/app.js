@@ -130,13 +130,13 @@ function buildTuningTable() {
 }
 
 function octavePrefFor(octave) {
-  if (octave >= 5) return 'h';
+  if (octave >= 6) return 'h';
   if (octave <= 3) return 'l';
-  return 'm';
+  return 'm';   // 4-5 -> m
 }
 function octaveFromPref(pref, letter) {
-  // Provide reasonable octaves: l=3, m=4, h=5
-  if (pref === 'h') return 5;
+  // l=3, m=4, h=6 (matches the koto default tuning's octave layout)
+  if (pref === 'h') return 6;
   if (pref === 'l') return 3;
   return 4;
 }

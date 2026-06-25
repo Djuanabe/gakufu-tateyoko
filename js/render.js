@@ -150,6 +150,12 @@ function renderCell(cell, instrumentType) {
         label.className = 'kanji';
         label.textContent = stringLabel(instrumentType, n.stringIndex) || '?';
         row.appendChild(label);
+      } else {
+        // No kanji (standalone ヲ/オ): keep the slot the same shape as a normal
+        // note so the mark sits in the same left-of-center position.
+        const spacer = document.createElement('span');
+        spacer.className = 'kanji-spacer';
+        row.appendChild(spacer);
       }
       stack.appendChild(row);
     });
