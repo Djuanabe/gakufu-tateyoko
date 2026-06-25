@@ -181,6 +181,28 @@ body {
 /* Beat divider (every halfBeatsPerBeat cells = 1 beat) - heavier line */
 .cell.beat-end { border-bottom: 2px solid #444; }
 
+/* Tuning-change marker on a measure column */
+.measure.tuning-change { border-right: 4px double #b8761a; }
+.tuning-badge {
+  writing-mode: vertical-rl;
+  font-size: 0.55em;
+  color: #b8761a;
+  text-align: center;
+  padding: 2px 0;
+  border-bottom: 1px solid #e0c089;
+  background: #fdf3e0;
+}
+
+.tuning-sections {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+.tuning-sections button { padding: 0.2em 0.6em; }
+
 .modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.5);

@@ -76,7 +76,14 @@
 <div id="tuning-modal" class="modal hidden">
   <div class="modal-content">
     <h2>調弦表</h2>
-    <p>各絃に対応する音名を入力してください（例: <code>lc</code>=低C, <code>md</code>=中D, <code>hgs</code>=高G♯）。</p>
+    <p>各絃に対応する音名を入力してください（例: <code>lc</code>=低C, <code>md</code>=中D, <code>hg</code>=高G。範囲外は <code>d6</code> のようにオクターブ番号で）。</p>
+    <div class="tuning-sections">
+      <label>編集する調弦区間:
+        <select id="tuning-section"></select>
+      </label>
+      <button id="tuning-add">現在の小節から調弦変更を追加</button>
+      <button id="tuning-remove">この区間を削除</button>
+    </div>
     <table id="tuning-table"></table>
     <div class="modal-actions">
       <button id="tuning-close">閉じる</button>

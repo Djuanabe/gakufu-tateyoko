@@ -34,7 +34,7 @@ function commitInput(text) {
     return;
   }
   if (parsed.type === 'chord') {
-    applyChord(cell, parsed.notes, State.sheet.tuning);
+    applyChord(cell, parsed.notes, State.tuningForCursor());
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
     State.advanceHalfBeat();
@@ -95,6 +95,42 @@ function handleBackspace() {
   refresh();
 }
 
+// Which tuning section (by fromMeasure) is currently shown in the modal.
+let editingTuningFrom = 0;
+
+function openTuningModal() {
+  // default to the section that governs the cursor's measure
+  let from = 0;
+  for (const t of State.sheet.tunings) {
+    if (t.fromMeasure <= State.cursor.measure) from = t.fromMeasure; else break;
+  }
+  editingTuningFrom = from;
+  buildTuningSections();
+  buildTuningTable();
+  document.getElementById('tuning-modal').classList.remove('hidden');
+}
+
+function buildTuningSections() {
+  const sel = document.getElementById('tuning-section');
+  sel.innerHTML = '';
+  State.sheet.tunings.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.fromMeasure;
+    opt.textContent = t.fromMeasure === 0
+      ? '1小節〜（基本調弦）'
+      : `${t.fromMeasure + 1}小節〜`;
+    sel.appendChild(opt);
+  });
+  sel.value = String(editingTuningFrom);
+  // disable remove for the base section
+  document.getElementById('tuning-remove').disabled = (editingTuningFrom === 0);
+}
+
+function currentTuningEntry() {
+  return State.sheet.tunings.find(t => t.fromMeasure === editingTuningFrom)
+      || State.sheet.tunings[0];
+}
+
 function buildTuningTable() {
   const tbl = document.getElementById('tuning-table');
   tbl.innerHTML = '';
@@ -102,7 +138,8 @@ function buildTuningTable() {
   head.innerHTML = '<th>絃</th><th>音名（例: lc, md, hg / 範囲外は d6, ef6）</th><th>現在の音</th>';
   tbl.appendChild(head);
   const type = State.sheet.instrumentType;
-  State.sheet.tuning.forEach((s, idx) => {
+  const tuning = currentTuningEntry().tuning;
+  tuning.forEach((s, idx) => {
     const tr = document.createElement('tr');
     const tdLabel = document.createElement('td');
     tdLabel.textContent = stringLabel(type, idx);
@@ -114,9 +151,9 @@ function buildTuningTable() {
       const pitch = parseTuningPitch(inp.value.trim().toLowerCase());
       if (!pitch) { alert('入力形式が不正です'); inp.value = cur; return; }
       History.push();
-      State.sheet.tuning[idx] = {...pitch, midi: pitchToMidi(pitch)};
+      tuning[idx] = {...pitch, midi: pitchToMidi(pitch)};
       tdMidi.textContent = pitchToMidi(pitch);
-      inp.value = tuningPitchToText(State.sheet.tuning[idx]);
+      inp.value = tuningPitchToText(tuning[idx]);
       State.reconvertAll();
       refresh();
     });
@@ -257,12 +294,33 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh();
   });
 
-  document.getElementById('open-tuning').addEventListener('click', () => {
-    buildTuningTable();
-    document.getElementById('tuning-modal').classList.remove('hidden');
-  });
+  document.getElementById('open-tuning').addEventListener('click', openTuningModal);
   document.getElementById('tuning-close').addEventListener('click', () => {
     document.getElementById('tuning-modal').classList.add('hidden');
+    refresh();
+  });
+  document.getElementById('tuning-section').addEventListener('change', (e) => {
+    editingTuningFrom = parseInt(e.target.value, 10) || 0;
+    buildTuningSections();
+    buildTuningTable();
+  });
+  document.getElementById('tuning-add').addEventListener('click', () => {
+    History.push();
+    const entry = State.addTuningChange(State.cursor.measure);
+    editingTuningFrom = entry.fromMeasure;
+    buildTuningSections();
+    buildTuningTable();
+    State.reconvertAll();
+    refresh();
+  });
+  document.getElementById('tuning-remove').addEventListener('click', () => {
+    if (editingTuningFrom === 0) return;
+    History.push();
+    State.removeTuningChange(editingTuningFrom);
+    editingTuningFrom = 0;
+    buildTuningSections();
+    buildTuningTable();
+    State.reconvertAll();
     refresh();
   });
 

@@ -31,6 +31,16 @@ function renderScore(state) {
     const ts = m.timeSignature;
     const halfBeatsPerBeat = Math.max(1, Math.round(8 / ts.den)); // 4/4 -> 2
 
+    // mark a tuning change that begins at this measure
+    if (state.sheet.tunings &&
+        state.sheet.tunings.some(t => t.fromMeasure === mIdx && mIdx > 0)) {
+      mEl.classList.add('tuning-change');
+      const badge = document.createElement('div');
+      badge.className = 'tuning-badge';
+      badge.textContent = '調弦変更';
+      mEl.appendChild(badge);
+    }
+
     m.cells.forEach((cell, cellIdx) => {
       const cEl = renderCell(cell, state.sheet.instrumentType);
       cEl.dataset.measure = mIdx;

@@ -87,7 +87,9 @@ const State = {
   sheet: {
     instrumentType: '13',
     timeSignature: {num:4, den:4},
-    tuning: defaultTuning13(),
+    // Ordered list of tuning sections. The first (fromMeasure 0) is the base
+    // tuning; later entries override it from their measure onward.
+    tunings: [{ fromMeasure: 0, tuning: defaultTuning13() }],
     measures: []
   },
   cursor: { measure: 0, cell: 0 },
@@ -101,7 +103,40 @@ const State = {
 
   setInstrumentType(type) {
     this.sheet.instrumentType = type;
-    this.sheet.tuning = type === '17' ? defaultTuning17() : defaultTuning13();
+    // string count changes -> reset to a single base tuning for the new instrument
+    this.sheet.tunings = [{ fromMeasure: 0, tuning: type === '17' ? defaultTuning17() : defaultTuning13() }];
+  },
+
+  /* Tuning sections ---------------------------------------------------- */
+  baseTuning() { return this.sheet.tunings[0].tuning; },
+
+  // The tuning in effect at a given measure index.
+  tuningForMeasure(mIdx) {
+    let chosen = this.sheet.tunings[0];
+    for (const t of this.sheet.tunings) {
+      if (t.fromMeasure <= mIdx) chosen = t;
+      else break;
+    }
+    return chosen.tuning;
+  },
+
+  tuningForCursor() { return this.tuningForMeasure(this.cursor.measure); },
+
+  // Add (or fetch) a tuning section starting at the given measure, seeded
+  // with a deep copy of whatever tuning is currently active there.
+  addTuningChange(fromMeasure) {
+    const existing = this.sheet.tunings.find(t => t.fromMeasure === fromMeasure);
+    if (existing) return existing;
+    const seed = JSON.parse(JSON.stringify(this.tuningForMeasure(fromMeasure)));
+    const entry = { fromMeasure, tuning: seed };
+    this.sheet.tunings.push(entry);
+    this.sheet.tunings.sort((a, b) => a.fromMeasure - b.fromMeasure);
+    return entry;
+  },
+
+  removeTuningChange(fromMeasure) {
+    if (fromMeasure === 0) return; // base cannot be removed
+    this.sheet.tunings = this.sheet.tunings.filter(t => t.fromMeasure !== fromMeasure);
   },
 
   currentMeasure() { return this.sheet.measures[this.cursor.measure]; },
@@ -162,7 +197,8 @@ const State = {
    * pitch info stored in note.source (or in cell.unconverted). Standalone
    * marks (no source) are left untouched. */
   reconvertAll() {
-    for (const m of this.sheet.measures) {
+    this.sheet.measures.forEach((m, mIdx) => {
+      const tuning = this.tuningForMeasure(mIdx);
       for (const c of m.cells) {
         const pitches = [];
         const standalone = [];
@@ -174,12 +210,12 @@ const State = {
         }
         if (c.unconverted) for (const p of c.unconverted) pitches.push(p);
         if (pitches.length === 0) continue;
-        applyChord(c, pitches, this.sheet.tuning);
+        applyChord(c, pitches, tuning);
         if (standalone.length > 0) {
           c.notes = [...standalone, ...(c.notes || [])];
         }
       }
-    }
+    });
   },
 
   addMeasure() {
@@ -207,7 +243,12 @@ const State = {
   deserialize(json) {
     try {
       const obj = JSON.parse(json);
-      if (obj && obj.measures && obj.tuning) {
+      if (obj && obj.measures && (obj.tunings || obj.tuning)) {
+        // migrate old single-tuning saves
+        if (!obj.tunings && obj.tuning) {
+          obj.tunings = [{ fromMeasure: 0, tuning: obj.tuning }];
+          delete obj.tuning;
+        }
         this.sheet = obj;
         this.cursor = {measure: 0, cell: 0};
         return true;
