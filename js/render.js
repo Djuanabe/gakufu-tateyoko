@@ -286,8 +286,9 @@ function renderCell(cell, instrumentType) {
     stack.className = 'stack ' + (total > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
     if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
     if (notes.length > 1) {
-      // Chord notes side-by-side: keep the glyph size, squeeze vertically to fit.
-      stack.style.transform = `scaleY(${(1 / notes.length).toFixed(3)})`;
+      // Chord notes side-by-side: keep the glyph height, squeeze them
+      // horizontally (from the sides) so each stays tall/vertical.
+      stack.style.transform = `scaleX(${(1 / notes.length).toFixed(3)})`;
       stack.style.transformOrigin = 'center';
     }
     const addText = txt => {
