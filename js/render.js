@@ -257,9 +257,7 @@ function renderCell(cell, instrumentType) {
     el.classList.add('unconverted');
     const s = document.createElement('span');
     s.className = 'unknown';
-    s.textContent = cell.unconverted
-      .map(p => `${p.octavePref || ''}${p.letter}${p.accidental || ''}`)
-      .join(',');
+    s.textContent = cell.unconverted.map(pitchLabel).join(',');
     el.appendChild(s);
     return el;
   }
@@ -268,7 +266,9 @@ function renderCell(cell, instrumentType) {
   if (cell.notes && cell.notes.length > 0) {
     const stack = document.createElement('div');
     const n = cell.notes.length;
-    stack.className = 'stack ' + (n > 1 ? 'chord' : 'single');
+    const hasMark = cell.notes.some(x => x.leftMark);
+    stack.className = 'stack ' + (n > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
+    if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
     // shrink chords so they never overflow the cell (squishing is OK)
     if (n > 1) {
       const scale = Math.max(0.4, 1 / Math.sqrt(n));
@@ -304,11 +304,14 @@ function renderCell(cell, instrumentType) {
   if (cell.unconverted && cell.notes && cell.notes.length > 0) {
     const u = document.createElement('span');
     u.className = 'unknown';
-    u.textContent = '+' + cell.unconverted
-      .map(p => `${p.octavePref || ''}${p.letter}${p.accidental || ''}`)
-      .join(',');
+    u.textContent = '+' + cell.unconverted.map(pitchLabel).join(',');
     el.appendChild(u);
     el.classList.add('unconverted');
   }
   return el;
+}
+
+// Text label for an unconverted pitch, e.g. "5c", "4bf".
+function pitchLabel(p) {
+  return `${p.octave != null ? p.octave : ''}${(p.letter || '').toLowerCase()}${p.accidental || ''}`;
 }

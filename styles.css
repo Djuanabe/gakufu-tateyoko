@@ -155,9 +155,19 @@ body {
   display: inline-block;
   width: 1em;
 }
-/* keep a single note visually centered despite its left mark */
-.cell .stack.single .note-row .kanji,
-.cell .stack.single .note-row .kanji-spacer { margin-right: 0.6em; }
+/* Keep a single note visually centered. With a left mark, offset slightly to
+   compensate; without a mark, no offset so it sits dead-center. */
+.cell .stack.single.has-mark .note-row .kanji,
+.cell .stack.single.has-mark .note-row .kanji-spacer { margin-right: 0.6em; }
+
+/* Shift入力で音名を○で囲む（和音はまとめて1つの○） */
+.cell .stack.circled {
+  border: 1.5px solid #333;
+  border-radius: 50%;
+  padding: 2px 4px;
+  min-width: 1.5em;
+  box-sizing: border-box;
+}
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {
   position: relative;

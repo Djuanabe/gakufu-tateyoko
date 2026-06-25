@@ -4,31 +4,33 @@
  * Returns a hint describing the natural advance for the Enter key:
  *   'beat' | 'half' | 'empty' | 'error' | 'done'
  * (Space always advances a single sixteenth regardless of the hint.) */
-function applyInputToCell(text) {
+function applyInputToCell(text, opts) {
   const cell = State.currentCell();
   if (!cell) return 'done';
+  const circle = !!(opts && opts.circle);
   const parsed = parseCellInput(text);
 
   if (parsed.type === 'empty') return 'empty';
   if (parsed.type === 'error') { alert(parsed.message); return 'error'; }
 
   if (parsed.type === 'rest') {
-    Object.assign(cell, { rest: parsed.value, sustain: null, notes: [], unconverted: null });
+    Object.assign(cell, { rest: parsed.value, sustain: null, notes: [], unconverted: null, circled: false });
     return parsed.value === 'quarter' ? 'beat' : 'half';
   }
   if (parsed.type === 'sustain') {
-    Object.assign(cell, { sustain: parsed.value, rest: null, notes: [], unconverted: null });
+    Object.assign(cell, { sustain: parsed.value, rest: null, notes: [], unconverted: null, circled: false });
     return parsed.value === 'quarter' ? 'beat' : 'half';
   }
   if (parsed.type === 'mark') {
     cell.notes = [{ stringIndex: -1, leftMark: parsed.value, source: null }];
-    cell.rest = null; cell.sustain = null; cell.unconverted = null;
+    cell.rest = null; cell.sustain = null; cell.unconverted = null; cell.circled = circle;
     return 'half';
   }
   if (parsed.type === 'chord') {
     applyChord(cell, parsed.notes, State.tuningForCursor());
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
+    cell.circled = circle; // 和音もまとめて○で囲む
     return 'half';
   }
   return 'done';
@@ -36,9 +38,9 @@ function applyInputToCell(text) {
 
 // Enter: write the cell and advance by the natural duration. Inside a tuplet,
 // advance slot-to-slot instead.
-function commitEnter(text) {
+function commitEnter(text, opts) {
   const inTuplet = (() => { const c = State.currentCell(); return c && c.tuplet && c.tuplet.pos != null; })();
-  const hint = applyInputToCell(text);
+  const hint = applyInputToCell(text, opts);
   if (hint === 'error') return false;
   if (inTuplet) { State.advanceTupletSlot(); return true; }
   if (hint === 'empty') State.advanceHalfBeat();
@@ -49,7 +51,7 @@ function commitEnter(text) {
 
 // Space: quarter-beat (sixteenth) step. Empty -> place 三角＋黒丸; else write cell.
 // Inside a tuplet, Space also moves slot-to-slot.
-function commitSpace(text) {
+function commitSpace(text, opts) {
   const c0 = State.currentCell();
   const inTuplet = c0 && c0.tuplet && c0.tuplet.pos != null;
   if (text.trim() === '') {
@@ -62,7 +64,7 @@ function commitSpace(text) {
     if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
     return true;
   }
-  const hint = applyInputToCell(text);
+  const hint = applyInputToCell(text, opts);
   if (hint === 'error') return false;
   if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
   return true;
@@ -161,7 +163,7 @@ function buildTuningTable() {
   const tbl = document.getElementById('tuning-table');
   tbl.innerHTML = '';
   const head = document.createElement('tr');
-  head.innerHTML = '<th>絃</th><th>音名（例: lc, md, hg / 範囲外は d6, ef6）</th><th>現在の音</th>';
+  head.innerHTML = '<th>絃</th><th>音名（例: 3c, 4d, 5gs, 6ef）</th><th>現在の音</th>';
   tbl.appendChild(head);
   const type = State.sheet.instrumentType;
   const tuning = currentTuningEntry().tuning;
@@ -191,50 +193,16 @@ function buildTuningTable() {
   });
 }
 
-/* Octave bands are delimited at C, one octave per prefix:
- *   l = octave 3 (C3..B3), m = octave 4 (C4..B4), h = octave 5 (C5..B5).
- * Octaves outside 3..5 have no prefix and use an explicit octave digit. */
-function octavePrefFor(octave) {
-  if (octave === 3) return 'l';
-  if (octave === 4) return 'm';
-  if (octave === 5) return 'h';
-  return null; // outside l/m/h range -> use explicit octave digit
-}
-function octaveFromPref(pref) {
-  if (pref === 'l') return 3;
-  if (pref === 'h') return 5;
-  return 4; // m or none
-}
-
-// Display a tuning pitch: prefix form when in 3..5, else explicit octave.
+// Display a tuning pitch in the "<octave><letter><acc>" form, e.g. 3c, 4ef.
 function tuningPitchToText(s) {
-  const pref = octavePrefFor(s.octave);
-  const body = s.letter.toLowerCase() + (s.accidental || '');
-  return pref ? pref + body : body + s.octave;
+  return `${s.octave}${s.letter.toLowerCase()}${s.accidental || ''}`;
 }
 
-// Parse a tuning pitch: either "[hml]?letter[acc]" or "letter[acc]<octave>".
+// Parse a tuning pitch using the same note format (octave digit recommended).
 function parseTuningPitch(str) {
-  // explicit octave form, e.g. "d6", "ef6", "gs2"
-  let m = /^([a-g])(ss|ff|s|f|n)?(\d+)$/i.exec(str);
-  if (m) {
-    return {
-      letter: m[1].toUpperCase(),
-      accidental: normAcc(m[2]),
-      octave: parseInt(m[3], 10)
-    };
-  }
-  // prefix form, e.g. "lc", "md", "hg"
   const note = parseNoteToken(str);
   if (!note) return null;
-  return { letter: note.letter, accidental: note.accidental, octave: octaveFromPref(note.octavePref) };
-}
-
-function normAcc(raw) {
-  raw = (raw || '').toLowerCase();
-  if (raw === 's' || raw === 'ss') return 's';
-  if (raw === 'f' || raw === 'ff') return 'f';
-  return '';
+  return { letter: note.letter, accidental: note.accidental, octave: note.octave };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -257,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       History.push();
-      commitEnter(input.value);
+      commitEnter(input.value, { circle: e.shiftKey }); // Shift+Enter -> ○囲み
       input.value = '';
       refresh();
       return;
@@ -266,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Space = quarter-beat (sixteenth) step
       e.preventDefault();
       History.push();
-      commitSpace(input.value);
+      commitSpace(input.value, { circle: e.shiftKey }); // Shift+Space -> ○囲み
       input.value = '';
       refresh();
       return;

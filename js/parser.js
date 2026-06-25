@@ -45,10 +45,11 @@ function parseCellInput(text) {
 }
 
 function parseNoteToken(tok) {
-  // match: optional octave prefix h/m/l, then letter a-g, then accidentals
-  const m = /^([hml]?)([a-g])(ss|ff|s|f|n)?$/i.exec(tok);
+  // new format: optional leading octave digit, then letter a-g, then accidental
+  //   e.g. 5c, 4bf, 3gs, 4cn   (digit omitted -> octave 4)
+  const m = /^(\d)?([a-g])(ss|ff|s|f|n)?$/i.exec(tok);
   if (!m) return null;
-  const pref = (m[1] || '').toLowerCase();
+  const octave = (m[1] != null && m[1] !== '') ? parseInt(m[1], 10) : 4;
   const letter = m[2].toUpperCase();
   const accRaw = (m[3] || '').toLowerCase();
   let accidental = '';
@@ -61,8 +62,7 @@ function parseNoteToken(tok) {
   return {
     letter,
     accidental,
-    doubleShift,            // for ss/ff, add extra semitone
-    octavePref: pref || 'm', // h | m | l ; no prefix defaults to m (middle)
-    octave: null             // not yet specified
+    doubleShift,   // for ss/ff, add extra semitone
+    octave         // explicit octave (C-delimited)
   };
 }

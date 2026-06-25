@@ -20,15 +20,27 @@ function pitchClass(letter, accidental, doubleShift) {
 }
 
 function convertPitch(pitch, tuning) {
-  const targetPc = pitchClass(pitch.letter, pitch.accidental || '', pitch.doubleShift || 0);
-  const pref = pitch.octavePref || '';
-
   const offsets = [
     {delta: 0, leftMark: ''},
     {delta: -1, leftMark: 'wo'},
     {delta: -2, leftMark: 'o'}
   ];
 
+  // New format: explicit octave -> match exact midi, then half/whole down.
+  if (pitch.octave != null) {
+    const base = pitchToMidi({ letter: pitch.letter, accidental: pitch.accidental || '', octave: pitch.octave });
+    const target = base + (pitch.doubleShift || 0);
+    for (const off of offsets) {
+      const want = target + off.delta;
+      const idx = tuning.findIndex(s => s.midi === want);
+      if (idx >= 0) return { stringIndex: idx, leftMark: off.leftMark, source: pitch };
+    }
+    return null;
+  }
+
+  // Legacy fallback (old saves stored octavePref instead of an octave).
+  const targetPc = pitchClass(pitch.letter, pitch.accidental || '', pitch.doubleShift || 0);
+  const pref = pitch.octavePref || '';
   for (const off of offsets) {
     const wantPc = ((targetPc + off.delta) % 12 + 12) % 12;
     const candidates = [];

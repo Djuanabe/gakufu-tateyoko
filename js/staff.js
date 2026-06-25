@@ -58,7 +58,7 @@ function line(svg, x1, y1, x2, y2, color, w) {
 // Range of diatonic steps shown, extended by one octave (7 steps) up and down.
 const STAFF_LOW_STEP = -9;
 const STAFF_HIGH_STEP = 17;
-const STAFF_ROW_GAP = 150; // vertical distance between stacked staff rows
+const STAFF_ROW_GAP = 210; // vertical distance between stacked staff rows (room for labels)
 
 function drawStaffRow(svg, rowTop, clef, flats) {
   // 5 staff lines
@@ -152,7 +152,6 @@ function renderStaff() {
     }
 
     // label below the staff row
-    const pref = octavePrefForStaff(p.octave, clef);
     const lbl = document.createElementNS(NS, 'text');
     lbl.setAttribute('x', x);
     lbl.setAttribute('y', rowTop + 4 * STAFF.lineGap + 38);
@@ -170,7 +169,7 @@ function renderStaff() {
     hit.setAttribute('height', 4 * STAFF.lineGap + 70);
     hit.setAttribute('fill', 'transparent');
     hit.setAttribute('class', 'staff-hit');
-    const token = pref + p.letter.toLowerCase() + accidental;
+    const token = '' + p.octave + p.letter.toLowerCase() + accidental;
     hit.addEventListener('mouseenter', () => head.classList.add('hover'));
     hit.addEventListener('mouseleave', () => head.classList.remove('hover'));
     hit.addEventListener('click', () => appendToCellInput(token));
@@ -199,13 +198,6 @@ function letterStepNearMiddle(letter, clef) {
     if (stepToPitch(s, clef).letter === letter) return s;
   }
   return 4;
-}
-
-function octavePrefForStaff(octave, clef) {
-  // C-delimited bands: octave 3 -> l, 4 -> m, 5+ -> h, 2- -> l.
-  if (octave <= 3) return 'l';
-  if (octave === 4) return 'm';
-  return 'h';
 }
 
 function appendToCellInput(token) {
