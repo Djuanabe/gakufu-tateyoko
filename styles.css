@@ -160,6 +160,27 @@ body {
 .cell .stack.single.has-mark .note-row .kanji,
 .cell .stack.single.has-mark .note-row .kanji-spacer { margin-right: 0.6em; }
 
+/* Literal text / katakana placed in the center column like a string number. */
+.cell .note-row .kanji.center-text { font-size: 0.85em; }
+
+/* Left-side annotations (katakana/text after a separator), like ヲ/オ. */
+.cell .cell-left {
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.5em;
+  line-height: 1;
+  color: #333;
+}
+.cell .cell-left span {
+  display: inline-block;
+  transform: scaleY(1.7) scaleX(0.7); /* 縦長 */
+}
+
 /* Shift入力で音名を○で囲む（和音はまとめて1つの○） */
 .cell .stack.circled {
   border: 1.5px solid #333;
@@ -286,5 +307,6 @@ body {
 
 .staff-note { fill: #222; pointer-events: none; }
 .staff-note.hover { fill: #c98a14; }
+.staff-note.sel { fill: #c0392b; stroke: #c0392b; stroke-width: 3; }
 .staff-hit { cursor: pointer; }
 .staff-hit:hover { fill: rgba(201,138,20,0.12); }

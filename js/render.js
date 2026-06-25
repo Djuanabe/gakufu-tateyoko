@@ -262,20 +262,21 @@ function renderCell(cell, instrumentType) {
     return el;
   }
 
-  // Render notes side-by-side (chord = horizontal); each note is [mark][kanji].
-  if (cell.notes && cell.notes.length > 0) {
+  // Center content = chord notes + literal text, laid out side by side.
+  const notes = cell.notes || [];
+  const centerText = cell.centerText || [];
+  const total = notes.length + centerText.length;
+  if (total > 0) {
     const stack = document.createElement('div');
-    const n = cell.notes.length;
-    const hasMark = cell.notes.some(x => x.leftMark);
-    stack.className = 'stack ' + (n > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
+    const hasMark = notes.some(x => x.leftMark);
+    stack.className = 'stack ' + (total > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
     if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
-    // shrink chords so they never overflow the cell (squishing is OK)
-    if (n > 1) {
-      const scale = Math.max(0.4, 1 / Math.sqrt(n));
+    if (total > 1) {
+      const scale = Math.max(0.4, 1 / Math.sqrt(total));
       stack.style.fontSize = (1.15 * scale) + 'em';
       stack.style.lineHeight = '0.9';
     }
-    cell.notes.forEach(n => {
+    notes.forEach(n => {
       const row = document.createElement('div');
       row.className = 'note-row';
 
@@ -290,18 +291,39 @@ function renderCell(cell, instrumentType) {
         label.textContent = stringLabel(instrumentType, n.stringIndex) || '?';
         row.appendChild(label);
       } else {
-        // No kanji (standalone ヲ/オ): keep the slot the same shape as a normal
-        // note so the mark sits in the same left-of-center position.
         const spacer = document.createElement('span');
         spacer.className = 'kanji-spacer';
         row.appendChild(spacer);
       }
       stack.appendChild(row);
     });
+    // literal text items (katakana / arbitrary text), centered like a kanji
+    centerText.forEach(txt => {
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      const label = document.createElement('span');
+      label.className = 'kanji center-text';
+      label.textContent = txt;
+      row.appendChild(label);
+      stack.appendChild(row);
+    });
     el.appendChild(stack);
   }
+
+  // Left-side annotations (katakana/text after a separator), stacked vertically.
+  if (cell.left && cell.left.length > 0) {
+    const lcol = document.createElement('div');
+    lcol.className = 'cell-left';
+    cell.left.forEach(txt => {
+      const s = document.createElement('span');
+      s.textContent = txt;
+      lcol.appendChild(s);
+    });
+    el.appendChild(lcol);
+  }
+
   // Append any partially-unconverted notes as red text alongside
-  if (cell.unconverted && cell.notes && cell.notes.length > 0) {
+  if (cell.unconverted && notes.length > 0) {
     const u = document.createElement('span');
     u.className = 'unknown';
     u.textContent = '+' + cell.unconverted.map(pitchLabel).join(',');

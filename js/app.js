@@ -24,10 +24,14 @@ function applyInputToCell(text, opts) {
   if (parsed.type === 'mark') {
     cell.notes = [{ stringIndex: -1, leftMark: parsed.value, source: null }];
     cell.rest = null; cell.sustain = null; cell.unconverted = null; cell.circled = circle;
+    cell.centerText = []; cell.left = [];
     return 'half';
   }
-  if (parsed.type === 'chord') {
-    applyChord(cell, parsed.notes, State.tuningForCursor());
+  if (parsed.type === 'composite') {
+    const centerNotes = parsed.center.filter(i => i.kind === 'note').map(i => i.pitch);
+    applyChord(cell, centerNotes, State.tuningForCursor()); // sets notes + unconverted
+    cell.centerText = parsed.center.filter(i => i.kind === 'text').map(i => i.str);
+    cell.left = parsed.left.map(i => i.str);
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
     cell.circled = circle; // 和音もまとめて○で囲む
@@ -239,6 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
       refresh();
       return;
     }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      moveStaffSel(+1); // higher pitch
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      moveStaffSel(-1); // lower pitch
+      return;
+    }
     if (e.key === 'Backspace' && input.value === '') {
       // empty box: step back / delete instead of editing text
       e.preventDefault();
@@ -358,6 +372,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('clef').addEventListener('change', renderStaff);
   document.getElementById('key-sig').addEventListener('change', renderStaff);
+  document.getElementById('staff-pick').addEventListener('click', () => {
+    const tok = selectedStaffToken();
+    if (tok) appendToCellInput(tok);
+  });
 
   renderStaff();
   refresh();

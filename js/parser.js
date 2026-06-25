@@ -1,21 +1,22 @@
 /* Parse cell text input.
  *
  * Special single-char tokens (whole input):
- *   1  -> quarter rest (advances 1 full beat)
- *   2  -> eighth rest  (advances half beat)
- *   3  -> sustain marker (quarter, with-dot)  - advances half beat
- *   4  -> sustain marker (eighth)             - advances half beat
- *   w  -> just ヲ mark, no note (left-side accidental indicator)
- *   o  -> just オ mark
+ *   1 -> quarter rest, 2 -> eighth rest, 3/4 -> sustain, w -> ヲ, o -> オ
  *
- * Otherwise: comma-separated chord notes. Each note token:
- *   [h|m|l]?  letter(A-G)  (s|ss|f|ff|n)?
+ * Otherwise the input is COMPOSITE:
+ *   - A "center" part and a "left" part are separated by the first space or
+ *     読点(、). Everything before -> center, everything after -> left.
+ *   - Within a part, items are separated by comma / 読点 / space.
+ *   - Center note tokens (5c, 4bf, ...) form a chord (converted to strings).
+ *     Center non-note tokens are literal text (hiragana auto -> katakana).
+ *   - Left items are always literal text/kana, placed to the LEFT like ヲ/オ.
+ *   - A leading separator (input starts with space/、) makes everything left.
  *
  * Examples:
- *   haf       -> high A♭
- *   lbss      -> low B double-sharp
- *   mcn       -> mid C natural
- *   c,e,g     -> chord C-E-G (no octave preference)
+ *   5af            -> A♭ in octave 5
+ *   4c,4e,4g       -> chord C-E-G (octave 4)
+ *   5c ツ          -> string for 5C, with カナ「ツ」on its left
+ *   、ス           -> just カナ「ス」on the left (no note)
  */
 
 const SPECIAL_TOKENS = {
@@ -27,21 +28,43 @@ const SPECIAL_TOKENS = {
   'o': {type: 'mark', value: 'o'}
 };
 
+// Convert hiragana to katakana (leave everything else untouched).
+function toKatakana(s) {
+  return s.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+}
+
+const SEP_RE = /[,、 　]+/; // comma, 、, half/full-width space
+
+function parseItems(str, isCenter) {
+  if (!str) return [];
+  const out = [];
+  for (const tok of str.split(SEP_RE).filter(Boolean)) {
+    const note = isCenter ? parseNoteToken(tok.toLowerCase()) : null;
+    if (note) out.push({ kind: 'note', pitch: note });
+    else out.push({ kind: 'text', str: toKatakana(tok) });
+  }
+  return out;
+}
+
 function parseCellInput(text) {
-  const t = (text || '').trim().toLowerCase();
+  const raw = (text || '');
+  const t = raw.trim();
   if (!t) return {type: 'empty'};
 
-  if (SPECIAL_TOKENS[t]) return SPECIAL_TOKENS[t];
+  const low = t.toLowerCase();
+  if (SPECIAL_TOKENS[low]) return SPECIAL_TOKENS[low];
 
-  // chord parse
-  const tokens = t.split(',').map(s => s.trim()).filter(Boolean);
-  const notes = [];
-  for (const tok of tokens) {
-    const note = parseNoteToken(tok);
-    if (!note) return {type: 'error', message: `音名を解析できません: ${tok}`};
-    notes.push(note);
-  }
-  return {type: 'chord', notes};
+  // Split center / left at the first space or 読点.
+  const m = /[ 　、]/.exec(t);
+  let centerStr, leftStr;
+  if (m) { centerStr = t.slice(0, m.index); leftStr = t.slice(m.index + 1); }
+  else { centerStr = t; leftStr = ''; }
+
+  return {
+    type: 'composite',
+    center: parseItems(centerStr, true),
+    left: parseItems(leftStr, false)
+  };
 }
 
 function parseNoteToken(tok) {

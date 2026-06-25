@@ -60,6 +60,30 @@ const STAFF_LOW_STEP = -9;
 const STAFF_HIGH_STEP = 17;
 const STAFF_ROW_GAP = 210; // vertical distance between stacked staff rows (room for labels)
 
+// Keyboard selection of a staff note (moved with arrow keys).
+let staffNotes = [];  // {token, octave, midi, head} in ascending pitch order
+let staffSel = 0;
+
+function highlightStaffSel() {
+  staffNotes.forEach((n, idx) => {
+    if (!n.head) return;
+    n.head.classList.toggle('sel', idx === staffSel);
+  });
+}
+function moveStaffSel(delta) {
+  if (staffNotes.length === 0) return;
+  staffSel = Math.max(0, Math.min(staffNotes.length - 1, staffSel + delta));
+  highlightStaffSel();
+  const n = staffNotes[staffSel];
+  if (n && n.head && n.head.scrollIntoView) {
+    n.head.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+function selectedStaffToken() {
+  const n = staffNotes[staffSel];
+  return n ? n.token : null;
+}
+
 function drawStaffRow(svg, rowTop, clef, flats) {
   // 5 staff lines
   for (let i = 0; i < 5; i++) {
@@ -111,6 +135,8 @@ function renderStaff() {
   // Resize the SVG viewBox to fit all rows.
   const totalHeight = STAFF.topLine + (rows - 1) * STAFF_ROW_GAP + 4 * STAFF.lineGap + 50;
   svg.setAttribute('viewBox', `0 0 ${STAFF.width} ${totalHeight}`);
+
+  staffNotes = []; // rebuilt below in ascending pitch order
 
   // Draw each row's staff background.
   for (let r = 0; r < rows; r++) {
@@ -170,11 +196,17 @@ function renderStaff() {
     hit.setAttribute('fill', 'transparent');
     hit.setAttribute('class', 'staff-hit');
     const token = '' + p.octave + p.letter.toLowerCase() + accidental;
+    const noteIdx = staffNotes.length;
     hit.addEventListener('mouseenter', () => head.classList.add('hover'));
     hit.addEventListener('mouseleave', () => head.classList.remove('hover'));
-    hit.addEventListener('click', () => appendToCellInput(token));
+    hit.addEventListener('click', () => { staffSel = noteIdx; highlightStaffSel(); appendToCellInput(token); });
     svg.appendChild(hit);
+
+    staffNotes.push({ token, octave: p.octave, midi: pitchToMidi({letter: p.letter, accidental, octave: p.octave}), head });
   }
+
+  if (staffSel >= staffNotes.length) staffSel = staffNotes.length - 1;
+  highlightStaffSel();
 }
 
 // Draw ledger lines for notes that sit outside the 5-line staff row.
