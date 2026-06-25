@@ -97,7 +97,9 @@ body {
 
 /* One measure = one vertical column. */
 .measure {
-  width: 58px;
+  /* One beat = 2 eighths = 2×56 = 112px tall. For a 縦2 : 横3 beat box,
+     the column width = 1.5 × 112 = 168px (a horizontally-long rectangle). */
+  width: 168px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -132,22 +134,28 @@ body {
   gap: 1px;
   width: 100%;
 }
-/* one note = [mark][kanji] with the ヲ/オ mark to the LEFT of the kanji */
+/* one note = [mark][kanji] with the ヲ/オ mark hugging the LEFT of the kanji.
+   The mark is absolutely positioned so it adds no width: the note-row is one
+   character wide, so a chord lays its notes out as evenly-spaced single chars. */
 .cell .note-row {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .cell .note-row .left-mark {
-  flex: 0 0 auto;
+  position: absolute;
+  right: 100%;          /* sit immediately to the left of the kanji */
+  margin-right: -0.05em; /* nudge in so it almost touches the note */
   font-size: 0.5em;
   color: #333;
-  margin-right: 0.5px;
   line-height: 1;
-  /* 縦長: stretch the kana vertically, squeeze horizontally */
+  white-space: nowrap;
+  /* 縦長: stretch the kana vertically, squeeze horizontally; anchor the
+     right edge so the squeeze keeps it tight against the note. */
   display: inline-block;
   transform: scaleY(1.7) scaleX(0.7);
-  transform-origin: center;
+  transform-origin: right center;
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
@@ -162,10 +170,8 @@ body {
   display: inline-block;
   width: 1em;
 }
-/* Keep a single note visually centered. With a left mark, offset slightly to
-   compensate; without a mark, no offset so it sits dead-center. */
-.cell .stack.single.has-mark .note-row .kanji,
-.cell .stack.single.has-mark .note-row .kanji-spacer { margin-right: 0.6em; }
+/* The ヲ/オ mark no longer takes layout width (it's absolutely positioned),
+   so the kanji stays dead-centered with or without a mark. */
 
 /* Literal text / katakana placed in the center column like a string number. */
 .cell .note-row .kanji.center-text { font-size: 0.85em; }
@@ -195,6 +201,17 @@ body {
   padding: 2px 4px;
   min-width: 1.5em;
   box-sizing: border-box;
+}
+/* 単独音・オ/ヲ付きの単独音は正円で囲む（縦横を揃える） */
+.cell .stack.single.circled {
+  width: auto;            /* shrink to the glyph (don't fill the cell width) */
+  aspect-ratio: 1 / 1;
+  padding: 2px;
+  min-width: 1.8em;
+  min-height: 1.8em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {
