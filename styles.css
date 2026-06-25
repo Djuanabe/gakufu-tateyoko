@@ -70,10 +70,11 @@ body {
   background: #fffef7;
   padding: 0.6em;
   border: 1px solid #ccc;
-  /* Viewport sized so ~4 beats (one 4/4 measure) fit vertically,
-     in a 縦2 : 横3 (height : width) ratio. */
-  height: 480px;
-  width: 720px;
+  /* Viewport in a 縦2 : 横3 (height : width) ratio, but never taller than the
+     window (shrinks to fit so the page doesn't overflow vertically). */
+  height: min(440px, calc(100vh - 230px));
+  aspect-ratio: 3 / 2;
+  width: auto;
   max-width: 100%;
   align-self: flex-start;
   overflow-x: auto;
