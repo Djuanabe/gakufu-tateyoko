@@ -288,6 +288,16 @@ const State = {
     this.sheet.drawings.push({ type, orient, x: 24, y: 24, length: 120 });
     return this.sheet.drawings.length - 1;
   },
+  // Free-form text annotation overlay (separate type stored in drawings).
+  addText(text) {
+    if (!this.sheet.drawings) this.sheet.drawings = [];
+    this.sheet.drawings.push({ type: 'text', text: text || '文章', x: 24, y: 24 });
+    return this.sheet.drawings.length - 1;
+  },
+  setDrawingText(idx, text) {
+    const d = this.sheet.drawings[idx];
+    if (d && d.type === 'text') d.text = text;
+  },
   removeDrawing(idx) {
     if (this.sheet.drawings && idx >= 0 && idx < this.sheet.drawings.length) {
       this.sheet.drawings.splice(idx, 1);

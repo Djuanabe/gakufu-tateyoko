@@ -141,43 +141,60 @@ function selectedDockSheets() {
 
 /* ---- Docked (interleaved) rendering ------------------------------------- */
 
-// Build the ensemble layout into `container`. Columns interleave by measure:
-//   measure 0: Ⅰ, Ⅱ, …   measure 1: Ⅰ, Ⅱ, …   (each appended → row-reverse
-// puts Ⅰ-m0 at the right, reading right-to-left as requested).
+// Build the ensemble layout into `container`. Columns interleave by measure
+// (Ⅰ-m0, Ⅱ-m0, Ⅰ-m1, Ⅱ-m1, …). Each output 段 holds up to BEATS_PER_ROW
+// (16) beats of the lead part; measures that wouldn't fit are pushed to the
+// next 段 as a whole (small groups don't get split across 段).
+const BEATS_PER_ROW = 16;
+
+function beatsOfMeasure(m) {
+  return m ? (m.timeSignature.num * 4 / m.timeSignature.den) : 4;
+}
+
 function renderDockedInto(container, entries) {
   container.innerHTML = '';
-  const sys = document.createElement('div');
-  sys.className = 'system docked';
 
   const maxMeasures = Math.max(0, ...entries.map(e => e.sheet.parts[0].measures.length));
+  // Greedily pack measure-groups into 段, never splitting a single measure.
+  const rows = [];
+  let row = [], rowBeats = 0;
   for (let k = 0; k < maxMeasures; k++) {
-    entries.forEach((entry, instIdx) => {
-      const measures = entry.sheet.parts[0].measures;
-      const m = measures[k];
-      const col = document.createElement('div');
-      col.className = 'dock-col inst-' + (instIdx % 6);
-      if (instIdx === entries.length - 1) col.classList.add('group-end'); // last instrument of the measure group
-
-      const label = document.createElement('div');
-      label.className = 'dock-col-label';
-      label.textContent = (ROMAN[instIdx] || ('第' + (instIdx + 1))) + (k + 1);
-      col.appendChild(label);
-
-      if (m) {
-        const mEl = buildMeasureColumn(m, k, {
-          instrumentType: entry.sheet.instrumentType,
-          tunings: entry.sheet.tunings,
-        });
-        col.appendChild(mEl);
-      } else {
-        const blank = document.createElement('div');
-        blank.className = 'measure dock-blank';
-        col.appendChild(blank);
-      }
-      sys.appendChild(col);
-    });
+    const lead = entries[0].sheet.parts[0].measures[k];
+    const beats = beatsOfMeasure(lead);
+    if (row.length > 0 && rowBeats + beats > BEATS_PER_ROW) {
+      rows.push(row); row = []; rowBeats = 0;
+    }
+    row.push(k); rowBeats += beats;
   }
-  container.appendChild(sys);
+  if (row.length > 0) rows.push(row);
+
+  rows.forEach(measureIdxs => {
+    const sys = document.createElement('div');
+    sys.className = 'system docked';
+    measureIdxs.forEach(k => {
+      entries.forEach((entry, instIdx) => {
+        const measures = entry.sheet.parts[0].measures;
+        const m = measures[k];
+        const col = document.createElement('div');
+        col.className = 'dock-col inst-' + (instIdx % 6);
+        // last instrument of the measure-group -> thick divider on its left
+        if (instIdx === entries.length - 1) col.classList.add('group-end');
+        if (m) {
+          const mEl = buildMeasureColumn(m, k, {
+            instrumentType: entry.sheet.instrumentType,
+            tunings: entry.sheet.tunings,
+          });
+          col.appendChild(mEl);
+        } else {
+          const blank = document.createElement('div');
+          blank.className = 'measure dock-blank';
+          col.appendChild(blank);
+        }
+        sys.appendChild(col);
+      });
+    });
+    container.appendChild(sys);
+  });
   if (typeof drawTupletBrackets === 'function') drawTupletBrackets(container);
 }
 

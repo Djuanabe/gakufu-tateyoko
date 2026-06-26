@@ -86,7 +86,7 @@ body {
   display: flex;
   flex-direction: row-reverse;
   gap: 0;
-  border: 2px solid #222;
+  border: 4px double #222;   /* 外枠は二重線 */
   background: #fffef7;
   align-self: start;
   position: relative;   /* positioning context for the drawing overlay */
@@ -300,6 +300,20 @@ body {
   cursor: move;
 }
 .drawing.selected { outline: 1px dashed #c98a14; }
+/* Free-form text annotation: ASCII letters are italic (romaji style). */
+.drawing.drawing-text {
+  font-family: "Yuji Syuku", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  font-size: 1.1em;
+  line-height: 1.1;
+  padding: 1px 3px;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.5);
+}
+.drawing.drawing-text i { font-style: italic; }
+.text-row {
+  display: flex; gap: 0.4em; align-items: center; font-size: 0.9em; flex-wrap: wrap;
+}
+#text-input { flex: 1; min-width: 12em; padding: 0.25em 0.4em; border: 1px solid #888; border-radius: 3px; }
 .draw-handle {
   position: absolute;
   width: 9px; height: 9px;
@@ -395,13 +409,17 @@ body {
 .dock-preview { flex: 1; overflow: auto; padding: 12px; background: #fffef7;
   display: flex; flex-direction: row-reverse; align-items: flex-start; }
 
-/* Interleaved ensemble columns */
-.system.docked { display: flex; flex-direction: row-reverse; border: 2px solid #222; background: #fffef7; }
-.dock-col { display: flex; flex-direction: column; }
-.dock-col.group-end { border-left: 3px double #222; }
-.dock-col-label {
-  text-align: center; font-size: 0.85em; padding: 2px 0; background: #2d2a26; color: #f4ecd8;
+/* Interleaved ensemble columns. 一段 = up to 16 beats (4 measures of 4/4).
+   Multiple 段 stack top-to-bottom in .dock-preview. */
+.dock-preview { flex-direction: column; align-items: flex-end; gap: 14px; }
+.system.docked {
+  display: flex; flex-direction: row-reverse;
+  border: 4px double #222;     /* 外枠は二重線 */
+  background: #fffef7;
 }
+.dock-col { display: flex; flex-direction: column; }
+/* 楽器グループ間の区切り(N列ごと): 太線 */
+.dock-col.group-end { border-left: 3px solid #222; }
 .dock-col.inst-1 { background: #f1f6ff; }
 .dock-col.inst-2 { background: #fff5f0; }
 .dock-col.inst-3 { background: #f1fff3; }

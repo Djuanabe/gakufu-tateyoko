@@ -359,6 +359,15 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedDrawingIdx = State.addDrawing(type, orient);
     refresh();
   });
+  document.getElementById('text-add').addEventListener('click', () => {
+    const inp = document.getElementById('text-input');
+    const txt = inp.value.trim();
+    if (!txt) { alert('文章を入力してください。'); return; }
+    History.push();
+    selectedDrawingIdx = State.addText(txt);
+    inp.value = '';
+    refresh();
+  });
   document.getElementById('draw-del').addEventListener('click', () => {
     if (selectedDrawingIdx < 0) return;
     History.push();

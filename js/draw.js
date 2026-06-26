@@ -72,7 +72,29 @@ function buildDrawingSvg(d) {
   return { svg, w, h };
 }
 
+// Wrap runs of ASCII letters in <i> so romaji is italicised inside an HTML span.
+function italicizeRomaji(str) {
+  const tmp = document.createElement('span');
+  let i = 0;
+  while (i < str.length) {
+    const ch = str[i];
+    if (/[A-Za-z]/.test(ch)) {
+      let j = i;
+      while (j < str.length && /[A-Za-z]/.test(str[j])) j++;
+      const it = document.createElement('i');
+      it.textContent = str.slice(i, j);
+      tmp.appendChild(it);
+      i = j;
+    } else {
+      tmp.appendChild(document.createTextNode(ch));
+      i++;
+    }
+  }
+  return tmp;
+}
+
 function makeDrawingEl(d, idx) {
+  if (d.type === 'text') return makeTextEl(d, idx);
   const { svg, w, h } = buildDrawingSvg(d);
 
   const wrap = document.createElement('div');
@@ -141,4 +163,47 @@ function selectDrawing(idx) {
   document.querySelectorAll('.drawing').forEach((el, i) => {
     el.classList.toggle('selected', i === idx);
   });
+}
+
+function makeTextEl(d, idx) {
+  const wrap = document.createElement('div');
+  wrap.className = 'drawing drawing-text' + (idx === selectedDrawingIdx ? ' selected' : '');
+  wrap.style.left = d.x + 'px';
+  wrap.style.top = d.y + 'px';
+  wrap.appendChild(italicizeRomaji(d.text || ''));
+
+  // drag to move
+  wrap.addEventListener('pointerdown', (e) => {
+    if (e.detail >= 2) return; // double-click handled below
+    e.preventDefault();
+    selectDrawing(idx);
+    History.push();
+    const sx = e.clientX, sy = e.clientY, ox = d.x, oy = d.y;
+    const move = (ev) => {
+      d.x = Math.round(ox + (ev.clientX - sx));
+      d.y = Math.round(oy + (ev.clientY - sy));
+      wrap.style.left = d.x + 'px';
+      wrap.style.top = d.y + 'px';
+    };
+    const up = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  });
+
+  // double-click to edit text
+  wrap.addEventListener('dblclick', (e) => {
+    e.preventDefault();
+    selectDrawing(idx);
+    const next = prompt('文章を編集', d.text || '');
+    if (next == null) return;
+    History.push();
+    State.setDrawingText(idx, next);
+    wrap.innerHTML = '';
+    wrap.appendChild(italicizeRomaji(next));
+  });
+
+  return wrap;
 }
