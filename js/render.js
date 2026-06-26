@@ -321,23 +321,18 @@ function renderCell(cell, instrumentType) {
     };
     // left-side symbols first (so they render to the left)
     leftText.forEach(addText);
-    // Per-note circling: notes flagged `circled` (=入力で大文字) go to the LEFT
-    // of the uncircled ones. Preserve original order within each group.
-    const orderedNotes = notes.slice().sort((a, b) => (b.circled ? 1 : 0) - (a.circled ? 1 : 0));
-    orderedNotes.forEach(n => {
+    // Build one note-row (mark + kanji) for note `n`. The .circled class
+    // marks this row as needing an individual ring; when multiple notes share
+    // a ring they're wrapped in a .circle-group instead (no per-row class).
+    const buildNoteRow = (n, asCircled) => {
       const row = document.createElement('div');
-      row.className = 'note-row' + (n.circled ? ' circled' : '');
-
-      // ヲ/オ mark: a 0.75em-wide box (sized character) with the glyph squeezed
-      // to fill it, so it sits flush against the note on both sides. Only added
-      // when there actually is a mark (no empty box for unmarked notes).
+      row.className = 'note-row' + (asCircled ? ' circled' : '');
       if (n.leftMark) {
         const lm = document.createElement('span');
         lm.className = 'left-mark';
         lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
         row.appendChild(lm);
       }
-
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
         label.className = 'kanji';
@@ -350,8 +345,24 @@ function renderCell(cell, instrumentType) {
         spacer.className = 'kanji-spacer';
         row.appendChild(spacer);
       }
-      stack.appendChild(row);
-    });
+      return row;
+    };
+
+    // Per-note circling (=大文字入力). Notes go to the LEFT of the uncircled
+    // ones, preserving original input order. Multiple circled notes share one
+    // ring (like the whole-chord Shift+Enter ring); a lone circled note keeps
+    // its own individual ring.
+    const circled = notes.filter(n => n.circled);
+    const uncircled = notes.filter(n => !n.circled);
+    if (circled.length >= 2) {
+      const group = document.createElement('div');
+      group.className = 'circle-group';
+      circled.forEach(n => group.appendChild(buildNoteRow(n, false)));
+      stack.appendChild(group);
+    } else if (circled.length === 1) {
+      stack.appendChild(buildNoteRow(circled[0], true));
+    }
+    uncircled.forEach(n => stack.appendChild(buildNoteRow(n, false)));
     // far-right symbols ('8') last so they sit at the right end
     rightText.forEach(addText);
     el.appendChild(stack);

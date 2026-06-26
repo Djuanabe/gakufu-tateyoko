@@ -239,6 +239,20 @@ body {
   margin: 0 0.05em;
   flex: 0 0 auto;     /* 押しつぶされないように */
 }
+/* 大文字入力が2つ以上ある場合は、それらをまとめて一つの○で囲む
+   (Shift+Enter で和音全体を囲んだときと同じ見た目)。 */
+.cell .stack.chord .circle-group {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1.5px solid #333;
+  border-radius: 50%;
+  padding: 0.05em 0.25em;
+  margin: 0 0.05em;
+  flex: 0 0 auto;
+}
+/* 内部のnote-row同士は通常の和音と同様に少し詰める */
+.cell .stack.chord .circle-group .note-row + .note-row { margin-left: -0.12em; }
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {
   position: relative;
