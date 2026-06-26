@@ -111,8 +111,8 @@ body {
   background: rgba(255,254,247,0.85);
   padding: 1px 2px; pointer-events: none;
 }
-/* 小節ごとの区切り線: 半拍線と同じ細さ */
-.measure + .measure { border-right: 1px solid #888; }
+/* 小節ごとの区切り線: 二重線 */
+.measure + .measure { border-right: 4px double #222; }
 
 .cell {
   flex: 0 0 auto;
@@ -279,9 +279,9 @@ body {
 .cell .rest { font-size: 1em; color: #333; }
 .cell .unknown { color: #c0392b; font-size: 0.7em; }
 
-/* Beat divider: full-width line, same thinness as the half-beat line. */
-.cell.beat-end { border-bottom: 1px solid #888; }
-/* Eighth divider (half-beat): short line, 1/4 of the frame width, flush left. */
+/* Beat divider: full-width thin black line (same thinness as the half-beat). */
+.cell.beat-end { border-bottom: 1px solid #222; }
+/* Eighth divider (half-beat): short black line, 1/4 of the frame width, flush left. */
 .cell.eighth-end::after {
   content: '';
   position: absolute;
@@ -289,13 +289,13 @@ body {
   left: 0;
   width: 25%;
   height: 1px;
-  background: #888;
+  background: #222;
 }
 
 /* Tuplet block: occupies its full beats; bottom is a beat line. */
 .tuplet-block {
   position: relative;
-  border-bottom: 1px solid #888;
+  border-bottom: 1px solid #222;
 }
 /* Short tick where the tuplet crosses an internal beat boundary (does not
    reach across the note names). */
@@ -304,7 +304,7 @@ body {
   left: 0;
   width: 25%;
   height: 0;
-  border-top: 1px solid #888;
+  border-top: 1px solid #222;
   pointer-events: none;
 }
 
@@ -483,11 +483,11 @@ body {
   box-sizing: border-box;
   flex: 0 0 auto;
 }
-/* Each area = the OUTER FRAME (one of the two boxes per page). It hugs its own
-   columns tightly (no padding) so the frame sticks to the beat lines. */
+/* Each area = the OUTER FRAME (one of the two boxes per page), double line.
+   It hugs its 8-column block tightly (no padding). */
 .dock-area {
   display: inline-flex;
-  border: 1px solid #222;              /* 外枠（1ページに2つ）。拍線と同じ細さ */
+  border: 4px double #222;             /* 外枠（1ページに2つ）= 二重線 */
   background: #fffef7;
 }
 .dock-area-inner {
@@ -495,24 +495,28 @@ body {
   align-items: flex-start;
   gap: 0;                              /* 列同士は隣接 */
 }
-/* One column = a 16-beat block, sized to its own content (partial blocks are
-   shorter, so blank space carries no lines at all). */
+/* One column = a fixed-size 16-beat block, so blank/partial columns stay
+   aligned with the others. */
 .dock-col {
   display: flex; flex-direction: column;
   width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
+  height: 820px;                       /* 16 beats + 小節区切り */
   box-sizing: border-box;
+  overflow: hidden;
   background: #fffef7;
   flex: 0 0 auto;
   border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
 }
 /* rightmost column of an area butts against the area frame — no own separator */
 .dock-area-inner > .dock-col:first-child { border-right: none; }
+/* blank slots carry no divider line */
+.dock-col.empty { border-right: none; }
 /* n重奏: n列ごと(ブロック境界)の区切りは太線 */
 .dock-col.block-start { border-right: 3px solid #222; }
 .dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col .measure { border-right: none; width: 100%; }
-/* 小節ごとの区切りは半拍線と同じ細さ */
-.dock-col .measure + .measure { border-top: 1px solid #888; }
+/* 小節ごとの区切りは二重線（縦に積むので上罫） */
+.dock-col .measure + .measure { border-top: 4px double #222; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {

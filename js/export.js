@@ -215,25 +215,24 @@ function renderDockedInto(container, entries) {
     });
   });
 
-  // Each area frame hugs only its own columns (no empty padding columns); up to
-  // 8 columns per area, 16 per page. An area is rendered only if it has columns.
-  const pages = Math.max(1, Math.ceil(columns.length / COLS_PER_PAGE));
+  // Fixed grid: every page always shows two areas of 8 same-size columns.
+  // Blank slots are padded with empty columns so the 16拍×8列 layout stays
+  // aligned (empty columns show no divider lines).
+  const emptyCol = () => { const c = document.createElement('div'); c.className = 'dock-col empty'; return c; };
   const mkArea = cols => {
-    if (cols.length === 0) return null;
     const area = document.createElement('div'); area.className = 'dock-area';
     const inner = document.createElement('div'); inner.className = 'dock-area-inner';
-    cols.forEach(c => inner.appendChild(c));
+    for (let i = 0; i < COLS_PER_AREA; i++) inner.appendChild(cols[i] || emptyCol());
     area.appendChild(inner);
     return area;
   };
+  const pages = Math.max(1, Math.ceil(columns.length / COLS_PER_PAGE));
   for (let pg = 0; pg < pages; pg++) {
     const pageCols = columns.slice(pg * COLS_PER_PAGE, (pg + 1) * COLS_PER_PAGE);
     const page = document.createElement('div');
     page.className = 'dock-page';
-    const left = mkArea(pageCols.slice(COLS_PER_AREA));    // visually left (read 2nd)
-    const right = mkArea(pageCols.slice(0, COLS_PER_AREA)); // visually right (read 1st)
-    if (left) page.appendChild(left);
-    if (right) page.appendChild(right);
+    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));    // visually left (read 2nd)
+    page.appendChild(mkArea(pageCols.slice(0, COLS_PER_AREA))); // visually right (read 1st)
     container.appendChild(page);
   }
 
