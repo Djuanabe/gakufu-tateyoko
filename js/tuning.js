@@ -68,7 +68,7 @@ function applyChord(cell, chordPitches, tuning) {
   const unresolved = [];
   for (const p of chordPitches) {
     const r = convertPitch(p, tuning);
-    if (r) cell.notes.push(r);
+    if (r) { r.circled = !!p.circled; cell.notes.push(r); }
     else unresolved.push(p);
   }
   if (unresolved.length > 0) {

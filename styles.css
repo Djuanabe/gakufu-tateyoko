@@ -224,6 +224,18 @@ body {
   align-items: center;
   justify-content: center;
 }
+/* 大文字入力 = この音のみを個別に正円で囲む（和音内で混在可、左に並ぶ）。 */
+.cell .note-row.circled {
+  border: 1.5px solid #333;
+  border-radius: 50%;
+  padding: 0.06em 0.18em;
+  font-size: 0.66em;
+  aspect-ratio: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.05em;
+}
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {
   position: relative;
@@ -442,6 +454,8 @@ body {
 .dock-col { display: flex; flex-direction: column; }
 /* 楽器グループ間の区切り(N列ごと): 太線 */
 .dock-col.group-end { border-left: 3px solid #222; }
+/* 同じグループ内、隣接楽器の間: 細い一本線 */
+.dock-col.within-group { border-right: 1px solid #888; }
 .dock-col .measure { border-right: none; }
 .dock-blank { min-height: 200px; }
 

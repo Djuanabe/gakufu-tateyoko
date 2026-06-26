@@ -51,8 +51,13 @@ function parseCellInput(text) {
   for (const tok of t.split(SEP_RE).filter(Boolean)) {
     if (tok === '8') { right.push('8'); continue; }
     const note = parseNoteToken(tok.toLowerCase());
-    if (note) notes.push(note);
-    else left.push(toKatakana(tok));
+    if (note) {
+      // Uppercase note letter (A〜G) means: circle THIS note only.
+      note.circled = /[A-G]/.test(tok);
+      notes.push(note);
+    } else {
+      left.push(toKatakana(tok));
+    }
   }
   return { type: 'composite', notes, left, right };
 }

@@ -179,6 +179,8 @@ function renderDockedInto(container, entries) {
         col.className = 'dock-col inst-' + (instIdx % 6);
         // last instrument of the measure-group -> thick divider on its left
         if (instIdx === entries.length - 1) col.classList.add('group-end');
+        // every non-first instrument -> thin divider between same-group cols
+        if (instIdx > 0) col.classList.add('within-group');
         if (m) {
           const mEl = buildMeasureColumn(m, k, {
             instrumentType: entry.sheet.instrumentType,
