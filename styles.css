@@ -8,14 +8,15 @@ body {
 .topbar {
   background: #2d2a26;
   color: #f4ecd8;
-  padding: 0.6em 1em;
+  padding: 0.5em 0.8em;
   display: flex;
   align-items: center;
-  gap: 1em;
-  flex-wrap: wrap;
+  gap: 0.8em;
+  flex-wrap: nowrap;          /* keep the header on one line */
+  overflow-x: auto;           /* scroll horizontally if it doesn't fit */
 }
-.topbar h1 { font-size: 1.1em; margin: 0; }
-.controls { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; font-size: 0.9em; }
+.topbar h1 { font-size: 1.1em; margin: 0; white-space: nowrap; }
+.controls { display: flex; gap: 0.4em; align-items: center; flex-wrap: nowrap; font-size: 0.85em; white-space: nowrap; }
 .controls button, .controls select, .controls input {
   background: #f4ecd8; color: #222; border: 1px solid #555; padding: 0.2em 0.5em; border-radius: 3px;
 }
