@@ -114,7 +114,8 @@ body {
   padding: 1px 2px; pointer-events: none;
 }
 /* 小節ごとの区切り線: 二重線 */
-.measure + .measure { border-right: 4px double #222; }
+/* 小節線: 拍線(1px)と同じ太さの線を2本(=3px double → 1px/1px隙間/1px) */
+.measure + .measure { border-right: 3px double #222; }
 
 .cell {
   flex: 0 0 auto;
@@ -518,7 +519,8 @@ body {
 .dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col .measure { border-right: none; width: 100%; }
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
-.dock-col .measure + .measure { border-top: 4px double #222; }
+/* 小節線: 拍線(1px)と同じ太さの線を2本 */
+.dock-col .measure + .measure { border-top: 3px double #222; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {

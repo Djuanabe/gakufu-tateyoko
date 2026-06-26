@@ -278,6 +278,13 @@ function renderCell(cell, instrumentType) {
   const el = document.createElement('div');
   el.className = 'cell';
 
+  if (cell.iter) {
+    const s = document.createElement('span');
+    s.className = 'kanji iter-mark';
+    s.textContent = cell.iter;          // 「ゝ」一音の繰り返し
+    el.appendChild(s);
+    return el;
+  }
   if (cell.rest) {
     const s = document.createElement('span');
     s.className = 'rest';

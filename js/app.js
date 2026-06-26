@@ -24,7 +24,13 @@ function applyInputToCell(text, opts) {
   if (parsed.type === 'mark') {
     cell.notes = [{ stringIndex: -1, leftMark: parsed.value, source: null }];
     cell.rest = null; cell.sustain = null; cell.unconverted = null; cell.circled = circle;
-    cell.centerText = []; cell.left = [];
+    cell.centerText = []; cell.left = []; cell.iter = null;
+    return 'half';
+  }
+  if (parsed.type === 'iter') {
+    // 一音の繰り返し記号「ゝ」を中央に置く
+    Object.assign(cell, { iter: parsed.value, notes: [], rest: null, sustain: null,
+      unconverted: null, circled: false, left: [], right: [], centerText: [] });
     return 'half';
   }
   if (parsed.type === 'composite') {

@@ -24,6 +24,7 @@ const SPECIAL_TOKENS = {
   '2': {type: 'rest', value: 'eighth'},
   '3': {type: 'sustain', value: 'quarter'},
   '4': {type: 'sustain', value: 'eighth'},
+  '5': {type: 'iter', value: 'ゝ'},   // 一音の繰り返し記号
   'w': {type: 'mark', value: 'wo'},
   'o': {type: 'mark', value: 'o'}
 };

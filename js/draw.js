@@ -80,28 +80,17 @@ function buildDrawingSvg(d) {
   };
 
   if (d.type === 'repeat') {
-    // 縦譜の進行(縦)に沿った繰り返し括弧: 縦線＋上下のかぎ＋反復ドット。
-    const x = w - 3;                 // spine near the right edge
-    const stroke = (dStr) => {
-      const p = document.createElementNS(DRAW_NS, 'path');
-      p.setAttribute('d', dStr);
-      p.setAttribute('fill', 'none');
-      p.setAttribute('stroke', INK);
-      p.setAttribute('stroke-width', '2');
-      p.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(p);
-    };
-    stroke(`M ${x} 1 L ${x} ${L - 1}`);              // spine
-    stroke(`M ${x} 1 L 3 1`);                        // top hook
-    stroke(`M ${x} ${L - 1} L 3 ${L - 1}`);          // bottom hook
-    [-6, 6].forEach(dy => {                          // repeat dots (centre)
-      const c = document.createElementNS(DRAW_NS, 'circle');
-      c.setAttribute('cx', x - 4);
-      c.setAttribute('cy', (L / 2 + dy).toFixed(1));
-      c.setAttribute('r', '1.8');
-      c.setAttribute('fill', INK);
-      svg.appendChild(c);
-    });
+    // ひらがなの「く」を縦に伸ばした繰り返し記号(くの字点)。長さ=半拍単位。
+    // 右上 → 左中央の頂点 → 右下 の角ばった筆ストローク。
+    const xr = w - 3, xl = 3, mY = L / 2;
+    const p = document.createElementNS(DRAW_NS, 'path');
+    p.setAttribute('d', `M ${xr} 1 L ${xl} ${mY.toFixed(1)} L ${xr} ${L - 1}`);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', INK);
+    p.setAttribute('stroke-width', '2.6');
+    p.setAttribute('stroke-linecap', 'round');
+    p.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(p);
   } else if (d.type === 'wave') {
     fillPath(brushWavePath(L, mid, d.orient));
   } else if (d.type === 'arrow') {
