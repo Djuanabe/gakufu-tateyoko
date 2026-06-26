@@ -94,9 +94,9 @@ body {
 
 /* One measure = one vertical column. */
 .measure {
-  /* One beat = 2 eighths = 2×56 = 112px tall. For a 縦2 : 横3 beat box,
-     the column width = 1.5 × 112 = 168px (a horizontally-long rectangle). */
-  width: 168px;
+  /* One beat = 2 eighths = 2×46 = 92px tall. For a 縦2 : 横3 beat box,
+     the column width = 1.5 × 92 = 138px (a horizontally-long rectangle). */
+  width: 138px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -115,6 +115,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "Yuji Syuku", "Yu Mincho", "Hiragino Mincho ProN", serif;
   font-size: 1.45em;
   line-height: 1.0;
   overflow: hidden;
@@ -128,12 +129,13 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 0;
   width: 100%;
 }
-/* one note = [mark][kanji] with the ヲ/オ mark hugging the LEFT of the kanji.
-   The mark is absolutely positioned so it adds no width: the note-row is one
-   character wide, so a chord lays its notes out as evenly-spaced single chars. */
+/* tighten the spacing between adjacent chord note names */
+.cell .stack.chord .note-row + .note-row { margin-left: -0.12em; }
+/* one note = [mark][kanji]; the ヲ/オ mark is an in-flow SIZED character to the
+   LEFT of the kanji (its width counts in the layout, like the note name). */
 .cell .note-row {
   position: relative;
   display: flex;
@@ -141,18 +143,16 @@ body {
   justify-content: center;
 }
 .cell .note-row .left-mark {
-  position: absolute;
-  right: 100%;          /* sit immediately to the left of the kanji */
-  margin-right: -0.05em; /* nudge in so it almost touches the note */
+  flex: 0 0 auto;
   font-size: 1em;       /* same height as the note name */
   color: #333;
   line-height: 1;
   white-space: nowrap;
-  /* Match the note's vertical length; squeeze only horizontally so it stays a
-     thin kana hugging the left. Anchor the right edge against the note. */
+  /* Full note height; horizontal = 1.5× the previous 0.5 squeeze = 0.75. */
   display: inline-block;
-  transform: scaleX(0.5);
+  transform: scaleX(0.75);
   transform-origin: right center;
+  margin-right: -0.08em; /* keep it snug against the note */
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
