@@ -141,11 +141,14 @@ function selectedDockSheets() {
 
 /* ---- Docked (interleaved) rendering ------------------------------------- */
 
-// Build the ensemble layout into `container`. Columns interleave by measure
-// (Ⅰ-m0, Ⅱ-m0, Ⅰ-m1, Ⅱ-m1, …). Each output 段 holds up to BEATS_PER_ROW
-// (16) beats of the lead part; measures that wouldn't fit are pushed to the
-// next 段 as a whole (small groups don't get split across 段).
-const BEATS_PER_ROW = 16;
+// Output layout: each COLUMN holds up to 16 beats (e.g. 4 measures of 4/4)
+// stacked vertically. Columns read right-to-left and interleave by instrument
+// per 16-beat block (Ⅰ block1, Ⅱ block1, Ⅰ block2, …). A B4-landscape page is
+// split into two side-by-side areas of 8 columns each (16 cols/page).
+const BEATS_PER_COL = 16;
+const COLS_PER_AREA = 8;
+const COLS_PER_PAGE = COLS_PER_AREA * 2;
+const OUT_H8 = 22;   // shrunk eighth-cell height so 16 beats fit a B4 column
 
 function beatsOfMeasure(m) {
   return m ? (m.timeSignature.num * 4 / m.timeSignature.den) : 4;
@@ -155,48 +158,56 @@ function renderDockedInto(container, entries) {
   container.innerHTML = '';
 
   const maxMeasures = Math.max(0, ...entries.map(e => e.sheet.parts[0].measures.length));
-  // Greedily pack measure-groups into 段, never splitting a single measure.
-  const rows = [];
-  let row = [], rowBeats = 0;
+  // Group lead-part measures into ≤16-beat blocks (never split a measure).
+  const blocks = [];
+  let blk = [], beats = 0;
   for (let k = 0; k < maxMeasures; k++) {
-    const lead = entries[0].sheet.parts[0].measures[k];
-    const beats = beatsOfMeasure(lead);
-    if (row.length > 0 && rowBeats + beats > BEATS_PER_ROW) {
-      rows.push(row); row = []; rowBeats = 0;
-    }
-    row.push(k); rowBeats += beats;
+    const mb = beatsOfMeasure(entries[0].sheet.parts[0].measures[k]);
+    if (blk.length && beats + mb > BEATS_PER_COL) { blocks.push(blk); blk = []; beats = 0; }
+    blk.push(k); beats += mb;
   }
-  if (row.length > 0) rows.push(row);
+  if (blk.length) blocks.push(blk);
 
-  rows.forEach(measureIdxs => {
-    const sys = document.createElement('div');
-    sys.className = 'system docked';
-    measureIdxs.forEach(k => {
-      entries.forEach((entry, instIdx) => {
-        const measures = entry.sheet.parts[0].measures;
-        const m = measures[k];
-        const col = document.createElement('div');
-        col.className = 'dock-col inst-' + (instIdx % 6);
-        // last instrument of the measure-group -> thick divider on its left
-        if (instIdx === entries.length - 1) col.classList.add('group-end');
-        // every non-first instrument -> thin divider between same-group cols
-        if (instIdx > 0) col.classList.add('within-group');
+  // Build one column per (block, instrument) in reading order.
+  const columns = [];
+  blocks.forEach(measureIdxs => {
+    entries.forEach(entry => {
+      const col = document.createElement('div');
+      col.className = 'dock-col';
+      measureIdxs.forEach(k => {
+        const m = entry.sheet.parts[0].measures[k];
         if (m) {
-          const mEl = buildMeasureColumn(m, k, {
+          col.appendChild(buildMeasureColumn(m, k, {
             instrumentType: entry.sheet.instrumentType,
             tunings: entry.sheet.tunings,
-          });
-          col.appendChild(mEl);
-        } else {
-          const blank = document.createElement('div');
-          blank.className = 'measure dock-blank';
-          col.appendChild(blank);
+            h8: OUT_H8,
+          }));
         }
-        sys.appendChild(col);
       });
+      columns.push(col);
     });
-    container.appendChild(sys);
   });
+
+  // Distribute columns into B4 pages: right area = first 8 (read first), left
+  // area = next 8. Each area lays its columns right-to-left and centres them.
+  let start = 0;
+  do {
+    const pageCols = columns.slice(start, start + COLS_PER_PAGE);
+    const page = document.createElement('div');
+    page.className = 'dock-page';
+    const mkArea = cols => {
+      const area = document.createElement('div'); area.className = 'dock-area';
+      const inner = document.createElement('div'); inner.className = 'dock-area-inner';
+      cols.forEach(c => inner.appendChild(c));
+      area.appendChild(inner);
+      return area;
+    };
+    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));  // visually left (read 2nd)
+    page.appendChild(mkArea(pageCols.slice(0, COLS_PER_AREA))); // visually right (read 1st)
+    container.appendChild(page);
+    start += COLS_PER_PAGE;
+  } while (start < columns.length);
+
   if (typeof drawTupletBrackets === 'function') drawTupletBrackets(container);
 }
 

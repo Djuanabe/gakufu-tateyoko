@@ -457,32 +457,56 @@ body {
   background: #2d2a26; color: #f4ecd8;
 }
 .dock-preview-bar span { margin-right: auto; }
-.dock-preview { flex: 1; overflow: auto; padding: 12px; background: #fffef7;
-  display: flex; flex-direction: row-reverse; align-items: flex-start; }
-
-/* Interleaved ensemble columns. 一段 = up to 16 beats (4 measures of 4/4).
-   Multiple 段 stack top-to-bottom in .dock-preview. */
-.dock-preview { flex-direction: column; align-items: flex-end; gap: 14px; }
-.system.docked {
-  display: flex; flex-direction: row-reverse;
-  border: 4px double #222;     /* 外枠は二重線 */
-  background: #fffef7;
+/* The preview area holds one or more B4-landscape PAGES stacked vertically. */
+.dock-preview {
+  flex: 1; overflow: auto; padding: 16px; background: #777;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
 }
-.dock-col { display: flex; flex-direction: column; }
-/* 楽器グループ間の区切り(N列ごと): 太線 */
-.dock-col.group-end { border-left: 3px solid #222; }
-/* 同じグループ内、隣接楽器の間: 細い一本線 */
-.dock-col.within-group { border-right: 1px solid #888; }
-.dock-col .measure { border-right: none; }
-.dock-blank { min-height: 200px; }
 
-/* Print → PDF: show only the docked preview */
+/* One output page = B4 landscape, split into two side-by-side areas. */
+.dock-page {
+  width: 1300px; height: 920px;     /* B4 landscape ratio ≈ 364:257 */
+  background: #fffef7;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  display: flex; flex-direction: row;   /* left area | right area */
+  flex: 0 0 auto;
+}
+/* Each half: the column block is centred with margins (no divider between
+   halves). The inner block keeps the columns top-aligned with each other. */
+.dock-area {
+  flex: 1 1 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px 24px;
+  overflow: hidden;
+}
+.dock-area-inner {
+  display: flex; flex-direction: row-reverse;  /* columns read right-to-left */
+  align-items: flex-start;
+  gap: 10px;
+}
+/* One column = up to 16 beats (e.g. 4 measures of 4/4) stacked vertically. */
+.dock-col {
+  display: flex; flex-direction: column;
+  border: 4px double #222;          /* 外枠は二重線 */
+  background: #fffef7;
+  flex: 0 0 auto;
+}
+.dock-col .measure { border-right: none; }
+/* 小節ごとの区切りも二重線（縦に積むので上罫） */
+.dock-col .measure + .measure { border-top: 4px double #222; }
+.dock-blank { min-height: 120px; }
+
+/* Print → PDF: B4 landscape, show only the pages */
 @media print {
-  @page { margin: 8mm; }
+  @page { size: B4 landscape; margin: 0; }
   body.printing > *:not(#dock-preview-overlay) { display: none !important; }
   #dock-preview-overlay { position: static; background: none; display: block; }
   #dock-preview-overlay .dock-preview-bar { display: none; }
   .dock-preview-shell { width: auto; height: auto; box-shadow: none; }
-  .dock-preview { display: block; overflow: visible; height: auto; padding: 0; }
-  .dock-preview .system.docked { width: max-content; }
+  .dock-preview { display: block; overflow: visible; height: auto; padding: 0; gap: 0; background: #fff; }
+  .dock-page {
+    width: 100%; height: 100vh; box-shadow: none; margin: 0;
+    page-break-after: always; break-after: page;
+  }
+  .dock-page:last-child { page-break-after: auto; break-after: auto; }
 }

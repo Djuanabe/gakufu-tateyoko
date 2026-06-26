@@ -43,15 +43,18 @@ function buildMeasureColumn(m, mIdx, opts) {
   const type = opts.instrumentType;
   const tunings = opts.tunings;
   const cursorHere = opts.isCursorCell || (() => false);
+  const h8 = opts.h8 || H8;          // override for shrunk PDF output
+  const h16 = h8 / 2;
 
   const mEl = document.createElement('div');
   mEl.className = 'measure';
   mEl.dataset.measure = mIdx;
+  if (opts.h8) mEl.style.width = (3 * h8) + 'px'; // keep the 2:3 beat box
 
   const ts = m.timeSignature;
   const perBeat = Math.max(1, Math.round(16 / ts.den));        // sixteenth cells per beat (4/4 -> 4)
   const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2)); // 4/4 -> 2
-  const beatH = eighthsPerBeat * H8;
+  const beatH = eighthsPerBeat * h8;
 
   // mark a tuning change that begins at this measure
   if (tunings && tunings.some(t => t.fromMeasure === mIdx && mIdx > 0)) {
@@ -108,20 +111,20 @@ function buildMeasureColumn(m, mIdx, opts) {
 
     if (subdivided) {
       const a = renderCell(cell, type);
-      sizeCell(a, H16);
+      sizeCell(a, h16);
       a.dataset.measure = mIdx; a.dataset.cell = i;
       if (cursorHere(i)) a.classList.add('active');
       mEl.appendChild(a); // no divider line under the first sixteenth
 
       const b = renderCell(next || newCell(), type);
-      sizeCell(b, H16);
+      sizeCell(b, h16);
       b.dataset.measure = mIdx; b.dataset.cell = i + 1;
       b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
       if (cursorHere(i + 1)) b.classList.add('active');
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
-      sizeCell(a, H8);
+      sizeCell(a, h8);
       a.dataset.measure = mIdx; a.dataset.cell = i;
       a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
       if (cursorHere(i)) a.classList.add('active');
