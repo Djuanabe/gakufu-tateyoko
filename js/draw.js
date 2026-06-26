@@ -18,16 +18,42 @@ function renderDrawings(sys, state) {
   sys.appendChild(overlay);
 }
 
-function wavePath(len, mid, orient) {
-  const amp = 5, step = 8;
-  let path = '';
-  for (let t = 0; t <= len; t += 2) {
+const INK = '#1b1b1b'; // 墨色（near-black）
+
+// orient-aware point: along-axis position `a`, cross-axis offset `c` from mid.
+function pt(a, c, mid, orient) {
+  return orient === 'h' ? [a, mid + c] : [mid + c, a];
+}
+
+// A brush stroke as a FILLED tapered "leaf": pointed at both ends, fuller in
+// the middle — the calligraphic feel of a 毛筆 (Yuji Syuku-like) line.
+function brushLeafPath(L, mid, hw, orient, headFull) {
+  const a0 = 1, a1 = L - 1, m = L * 0.5;
+  // when headFull, keep the far end (where an arrowhead attaches) fuller
+  const farHw = headFull ? hw * 0.65 : 0;
+  const P = (a, c) => pt(a, c, mid, orient).map(n => n.toFixed(1)).join(' ');
+  return `M ${P(a0, 0)} `
+       + `Q ${P(m * 0.55, -hw)} ${P(m, -hw)} `
+       + `Q ${P(L * 0.82, -hw * 0.8)} ${P(a1, -farHw)} `
+       + `L ${P(a1, farHw)} `
+       + `Q ${P(L * 0.82, hw * 0.8)} ${P(m, hw)} `
+       + `Q ${P(m * 0.55, hw)} ${P(a0, 0)} Z`;
+}
+
+// Wave as a brush ribbon: a sine spine offset by a (slightly tapering) half
+// width, so it reads as an undulating ink stroke rather than a hairline.
+function brushWavePath(L, mid, orient) {
+  const amp = 5.5, step = 9, hw = 1.9;
+  const top = [], bot = [];
+  for (let t = 0; t <= L; t += 2) {
     const off = amp * Math.sin((t / step) * Math.PI);
-    const x = orient === 'h' ? t : mid + off;
-    const y = orient === 'h' ? mid + off : t;
-    path += (t === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1) + ' ';
+    const taper = Math.min(1, Math.min(t, L - t) / 8); // thin at both ends
+    const h = hw * (0.55 + 0.45 * taper);
+    top.push(pt(t, off - h, mid, orient));
+    bot.push(pt(t, off + h, mid, orient));
   }
-  return path;
+  const seg = (arr) => arr.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  return seg(top) + ' ' + seg(bot.reverse()).replace(/^M/, 'L') + ' Z';
 }
 
 function buildDrawingSvg(d) {
@@ -35,39 +61,38 @@ function buildDrawingSvg(d) {
   const w = d.orient === 'h' ? L : DRAW_THICK;
   const h = d.orient === 'h' ? DRAW_THICK : L;
   const mid = DRAW_THICK / 2;
-  const stroke = '#222', sw = 1.6;
+  const HW = 2.1;                 // brush half-width (peak)
 
   const svg = document.createElementNS(DRAW_NS, 'svg');
   svg.setAttribute('width', w);
   svg.setAttribute('height', h);
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
-  if (d.type === 'wave') {
+  const fillPath = (dStr) => {
     const p = document.createElementNS(DRAW_NS, 'path');
-    p.setAttribute('d', wavePath(L, mid, d.orient));
-    p.setAttribute('fill', 'none');
-    p.setAttribute('stroke', stroke);
-    p.setAttribute('stroke-width', sw);
+    p.setAttribute('d', dStr);
+    p.setAttribute('fill', INK);
+    p.setAttribute('stroke', INK);
+    p.setAttribute('stroke-width', '0.6');
+    p.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(p);
+    return p;
+  };
+
+  if (d.type === 'wave') {
+    fillPath(brushWavePath(L, mid, d.orient));
+  } else if (d.type === 'arrow') {
+    // brush shaft (kept fuller toward the head) + a calligraphic arrowhead
+    fillPath(brushLeafPath(L, mid, HW, d.orient, true));
+    const a = 8, back = a * 1.15;
+    const tip = pt(L - 1, 0, mid, d.orient);
+    const wing1 = pt(L - 1 - back, -a, mid, d.orient);
+    const wing2 = pt(L - 1 - back, a, mid, d.orient);
+    const notch = pt(L - 1 - back * 0.55, 0, mid, d.orient); // concave back (brush)
+    const f = n => n.map(v => v.toFixed(1)).join(' ');
+    fillPath(`M ${f(tip)} L ${f(wing1)} L ${f(notch)} L ${f(wing2)} Z`);
   } else {
-    const ln = document.createElementNS(DRAW_NS, 'line');
-    if (d.orient === 'h') { ln.setAttribute('x1', 1); ln.setAttribute('y1', mid); ln.setAttribute('x2', L - 1); ln.setAttribute('y2', mid); }
-    else { ln.setAttribute('x1', mid); ln.setAttribute('y1', 1); ln.setAttribute('x2', mid); ln.setAttribute('y2', L - 1); }
-    ln.setAttribute('stroke', stroke);
-    ln.setAttribute('stroke-width', sw);
-    svg.appendChild(ln);
-    if (d.type === 'arrow') {
-      const a = 6;
-      const head = document.createElementNS(DRAW_NS, 'path');
-      const dp = d.orient === 'h'
-        ? `M ${L - 1} ${mid} L ${L - 1 - a} ${mid - a} M ${L - 1} ${mid} L ${L - 1 - a} ${mid + a}`
-        : `M ${mid} ${L - 1} L ${mid - a} ${L - 1 - a} M ${mid} ${L - 1} L ${mid + a} ${L - 1 - a}`;
-      head.setAttribute('d', dp);
-      head.setAttribute('fill', 'none');
-      head.setAttribute('stroke', stroke);
-      head.setAttribute('stroke-width', sw);
-      svg.appendChild(head);
-    }
+    fillPath(brushLeafPath(L, mid, HW, d.orient, false));
   }
   return { svg, w, h };
 }
