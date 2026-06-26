@@ -58,9 +58,11 @@ function brushWavePath(L, mid, orient) {
 
 function buildDrawingSvg(d) {
   const L = Math.max(10, d.length);
-  const w = d.orient === 'h' ? L : DRAW_THICK;
-  const h = d.orient === 'h' ? DRAW_THICK : L;
-  const mid = DRAW_THICK / 2;
+  // 繰り返し「く」だけ横幅を2倍にする
+  const thick = d.type === 'repeat' ? DRAW_THICK * 2 : DRAW_THICK;
+  const w = d.orient === 'h' ? L : thick;
+  const h = d.orient === 'h' ? thick : L;
+  const mid = thick / 2;
   const HW = 2.1;                 // brush half-width (peak)
 
   const svg = document.createElementNS(DRAW_NS, 'svg');
