@@ -479,12 +479,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('save').addEventListener('click', () => {
-    localStorage.setItem('gakufu', State.serialize());
-    alert('保存しました');
+    // If editing a score loaded from / saved to the library, overwrite it.
+    const name = getCurrentLibraryName();
+    if (name) {
+      librarySaveCurrent(name);
+      alert(`「${name}」を上書き保存しました`);
+    } else {
+      localStorage.setItem('gakufu', State.serialize());
+      alert('保存しました');
+    }
   });
   document.getElementById('load').addEventListener('click', () => {
     const data = localStorage.getItem('gakufu');
     if (data && State.deserialize(data)) {
+      setCurrentLibraryName(null); // クイック保存スロットはライブラリと無関係
       document.getElementById('instrument-type').value = State.sheet.instrumentType;
       refresh();
       alert('読み込みました');

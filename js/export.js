@@ -10,6 +10,14 @@
 const LIB_KEY = 'gakufu_library';
 const ROMAN = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ'];
 
+// Name of the library score currently being edited (set when loaded from or
+// saved to the library). The 保存 button overwrites this entry when set.
+let currentLibraryName = null;
+function setCurrentLibraryName(name) { currentLibraryName = name; }
+function getCurrentLibraryName() {
+  return (currentLibraryName && libNames().includes(currentLibraryName)) ? currentLibraryName : null;
+}
+
 function libLoad() {
   try {
     const raw = localStorage.getItem(LIB_KEY);
@@ -39,7 +47,9 @@ function libraryDelete(name) {
 function libraryLoadInto(name) {
   const lib = libLoad();
   if (!lib[name]) return false;
-  return State.deserialize(JSON.stringify(lib[name]));
+  const ok = State.deserialize(JSON.stringify(lib[name]));
+  if (ok) currentLibraryName = name; // 保存ボタンの上書き先にする
+  return ok;
 }
 
 // Normalize a stored sheet to the parts-based shape so the renderer can read
@@ -252,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!name) { alert('保存名を入力してください。'); return; }
     if (libNames().includes(name) && !confirm(`「${name}」は既にあります。上書きしますか？`)) return;
     librarySaveCurrent(name);
+    currentLibraryName = name; // 以後この名前を 保存 ボタンの上書き先に
     inp.value = '';
     refreshLibraryUI();
   });
