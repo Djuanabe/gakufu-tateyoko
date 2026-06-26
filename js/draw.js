@@ -170,7 +170,7 @@ function makeTextEl(d, idx) {
   wrap.className = 'drawing drawing-text' + (idx === selectedDrawingIdx ? ' selected' : '');
   wrap.style.left = d.x + 'px';
   wrap.style.top = d.y + 'px';
-  wrap.appendChild(italicizeRomaji(d.text || ''));
+  wrap.appendChild(italicizeRomaji(d.text && d.text.length > 0 ? d.text : '（文章）'));
 
   // drag to move
   wrap.addEventListener('pointerdown', (e) => {

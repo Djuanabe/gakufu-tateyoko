@@ -152,7 +152,11 @@ body {
   display: inline-block;
   transform: scaleX(0.75);
   transform-origin: right center;
-  margin-right: -0.08em; /* keep it snug against the note */
+  /* The transform shrinks the visual but not the layout box. Pull the box
+     LEFT by the squeezed amount (1em - 0.75em = 0.25em) so the visible mark
+     butts up against whatever sits on its left (the previous chord note). */
+  margin-left: -0.25em;
+  margin-right: 0;
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
@@ -303,11 +307,14 @@ body {
 /* Free-form text annotation: ASCII letters are italic (romaji style). */
 .drawing.drawing-text {
   font-family: "Yuji Syuku", "Yu Mincho", "Hiragino Mincho ProN", serif;
-  font-size: 1.1em;
-  line-height: 1.1;
-  padding: 1px 3px;
+  font-size: 16px;          /* don't inherit em from the score; stay readable */
+  line-height: 1.2;
+  color: #222;
+  padding: 2px 4px;
   white-space: nowrap;
-  background: rgba(255,255,255,0.5);
+  background: rgba(255, 255, 255, 0.85);
+  min-width: 1em;
+  min-height: 1em;
 }
 .drawing.drawing-text i { font-style: italic; }
 .text-row {
