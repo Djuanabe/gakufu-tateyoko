@@ -79,7 +79,30 @@ function buildDrawingSvg(d) {
     return p;
   };
 
-  if (d.type === 'wave') {
+  if (d.type === 'repeat') {
+    // 縦譜の進行(縦)に沿った繰り返し括弧: 縦線＋上下のかぎ＋反復ドット。
+    const x = w - 3;                 // spine near the right edge
+    const stroke = (dStr) => {
+      const p = document.createElementNS(DRAW_NS, 'path');
+      p.setAttribute('d', dStr);
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', INK);
+      p.setAttribute('stroke-width', '2');
+      p.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(p);
+    };
+    stroke(`M ${x} 1 L ${x} ${L - 1}`);              // spine
+    stroke(`M ${x} 1 L 3 1`);                        // top hook
+    stroke(`M ${x} ${L - 1} L 3 ${L - 1}`);          // bottom hook
+    [-6, 6].forEach(dy => {                          // repeat dots (centre)
+      const c = document.createElementNS(DRAW_NS, 'circle');
+      c.setAttribute('cx', x - 4);
+      c.setAttribute('cy', (L / 2 + dy).toFixed(1));
+      c.setAttribute('r', '1.8');
+      c.setAttribute('fill', INK);
+      svg.appendChild(c);
+    });
+  } else if (d.type === 'wave') {
     fillPath(brushWavePath(L, mid, d.orient));
   } else if (d.type === 'arrow') {
     // brush shaft (kept fuller toward the head) + a calligraphic arrowhead
@@ -166,7 +189,13 @@ function makeDrawingEl(d, idx) {
     const sx = e.clientX, sy = e.clientY, oL = d.length;
     const move = (ev) => {
       const delta = d.orient === 'h' ? (ev.clientX - sx) : (ev.clientY - sy);
-      d.length = Math.max(10, Math.round(oL + delta));
+      if (d.type === 'repeat') {
+        // 半拍(=H8)単位でスナップして拍数を変える（最小1半拍）
+        const units = Math.max(1, Math.round((oL + delta) / H8));
+        d.length = units * H8;
+      } else {
+        d.length = Math.max(10, Math.round(oL + delta));
+      }
       const built = buildDrawingSvg(d);
       wrap.style.width = built.w + 'px';
       wrap.style.height = built.h + 'px';

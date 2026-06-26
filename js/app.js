@@ -355,8 +355,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('draw-add').addEventListener('click', () => {
     History.push();
     const type = document.getElementById('draw-type').value;
-    const orient = document.getElementById('draw-orient').value;
+    let orient = document.getElementById('draw-orient').value;
+    if (type === 'repeat') orient = 'v'; // 繰り返しは音の進行方向(縦)に沿う
     selectedDrawingIdx = State.addDrawing(type, orient);
+    if (type === 'repeat') {
+      // length は半拍(=H8)単位。既定は2拍(=4半拍)分。
+      State.sheet.drawings[selectedDrawingIdx].length = 4 * H8;
+    }
     refresh();
   });
   document.getElementById('text-add').addEventListener('click', () => {
