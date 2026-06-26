@@ -167,7 +167,9 @@ function selectDrawing(idx) {
 
 function makeTextEl(d, idx) {
   const wrap = document.createElement('div');
-  wrap.className = 'drawing drawing-text' + (idx === selectedDrawingIdx ? ' selected' : '');
+  wrap.className = 'drawing drawing-text'
+    + (d.orient === 'v' ? ' vertical' : '')
+    + (idx === selectedDrawingIdx ? ' selected' : '');
   wrap.style.left = d.x + 'px';
   wrap.style.top = d.y + 'px';
   wrap.appendChild(italicizeRomaji(d.text && d.text.length > 0 ? d.text : '（文章）'));

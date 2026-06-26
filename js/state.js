@@ -289,9 +289,9 @@ const State = {
     return this.sheet.drawings.length - 1;
   },
   // Free-form text annotation overlay (separate type stored in drawings).
-  addText(text) {
+  addText(text, orient) {
     if (!this.sheet.drawings) this.sheet.drawings = [];
-    this.sheet.drawings.push({ type: 'text', text: text || '文章', x: 24, y: 24 });
+    this.sheet.drawings.push({ type: 'text', text: text || '文章', orient: orient || 'h', x: 24, y: 24 });
     return this.sheet.drawings.length - 1;
   },
   setDrawingText(idx, text) {

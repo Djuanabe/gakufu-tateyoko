@@ -325,15 +325,25 @@ function renderCell(cell, instrumentType) {
       const row = document.createElement('div');
       row.className = 'note-row';
 
-      const lm = document.createElement('span');
-      lm.className = 'left-mark';
-      lm.textContent = n.leftMark ? (LEFT_MARK_GLYPH[n.leftMark] || '') : '';
-      row.appendChild(lm);
+      // ヲ/オ mark: a 0.75em-wide box (sized character) with the glyph squeezed
+      // to fill it, so it sits flush against the note on both sides. Only added
+      // when there actually is a mark (no empty box for unmarked notes).
+      if (n.leftMark) {
+        const lm = document.createElement('span');
+        lm.className = 'left-mark';
+        const g = document.createElement('span');
+        g.className = 'lm-glyph';
+        g.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
+        lm.appendChild(g);
+        row.appendChild(lm);
+      }
 
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
         label.className = 'kanji';
-        label.textContent = stringLabel(instrumentType, n.stringIndex) || '?';
+        const lbl = stringLabel(instrumentType, n.stringIndex) || '?';
+        if (lbl.length > 1) label.classList.add('multichar'); // 十七絃の算用数字など
+        label.textContent = lbl;
         row.appendChild(label);
       } else {
         const spacer = document.createElement('span');

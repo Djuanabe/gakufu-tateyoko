@@ -147,22 +147,30 @@ body {
   font-size: 1em;       /* same height as the note name */
   color: #333;
   line-height: 1;
-  white-space: nowrap;
-  /* Full note height; horizontal = 1.5× the previous 0.5 squeeze = 0.75. */
+  /* A sized character: 0.75em-wide box (= 1.5× the old 0.5 squeeze). The glyph
+     is scaled to fill the box exactly, so the mark butts flush against the note
+     on its right AND the previous chord note on its left (no gap either side). */
+  display: inline-block;
+  width: 0.75em;
+  overflow: hidden;
+}
+.cell .note-row .left-mark .lm-glyph {
   display: inline-block;
   transform: scaleX(0.75);
-  transform-origin: right center;
-  /* The transform shrinks the visual but not the layout box. Pull the box
-     LEFT by the squeezed amount (1em - 0.75em = 0.25em) so the visible mark
-     butts up against whatever sits on its left (the previous chord note). */
-  margin-left: -0.25em;
-  margin-right: 0;
+  transform-origin: left center;
+  white-space: nowrap;
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
   display: inline-block;
   min-width: 1em;
   text-align: center;
+}
+/* 十七絃の算用数字(10〜17など2桁)は桁同士を詰めて1文字幅に近づける */
+.cell .note-row .kanji.multichar {
+  min-width: 0;
+  letter-spacing: -0.18em;
+  margin-right: 0.18em; /* compensate trailing letter-spacing so it stays centred */
 }
 /* Empty placeholder used when a row has only a ヲ/オ mark — keeps the same
    width as a kanji so the mark sits at the same left-of-center spot. */
@@ -317,6 +325,12 @@ body {
   min-height: 1em;
 }
 .drawing.drawing-text i { font-style: italic; }
+/* 縦書き: ローマ字もそのまま回転(横倒し)させる */
+.drawing.drawing-text.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+}
 .text-row {
   display: flex; gap: 0.4em; align-items: center; font-size: 0.9em; flex-wrap: wrap;
 }
@@ -407,6 +421,7 @@ body {
 .dock-preview-shell {
   background: #fff; border-radius: 6px; box-shadow: 0 0 0 2px #888, 0 8px 30px rgba(0,0,0,0.4);
   width: 92vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+  pointer-events: auto;   /* .modal sets pointer-events:none; re-enable here */
 }
 .dock-preview-bar {
   display: flex; align-items: center; gap: 0.8em; padding: 0.5em 0.8em;
@@ -427,9 +442,6 @@ body {
 .dock-col { display: flex; flex-direction: column; }
 /* 楽器グループ間の区切り(N列ごと): 太線 */
 .dock-col.group-end { border-left: 3px solid #222; }
-.dock-col.inst-1 { background: #f1f6ff; }
-.dock-col.inst-2 { background: #fff5f0; }
-.dock-col.inst-3 { background: #f1fff3; }
 .dock-col .measure { border-right: none; }
 .dock-blank { min-height: 200px; }
 

@@ -364,7 +364,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const txt = inp.value.trim();
     if (!txt) { alert('文章を入力してください。'); return; }
     History.push();
-    selectedDrawingIdx = State.addText(txt);
+    const orient = document.getElementById('text-orient').value;
+    selectedDrawingIdx = State.addText(txt, orient);
     inp.value = '';
     refresh();
   });
