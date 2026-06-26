@@ -497,7 +497,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('key-sig').addEventListener('change', renderStaff);
   document.getElementById('staff-pick').addEventListener('click', () => {
     const tok = selectedStaffToken();
-    if (tok) appendToCellInput(tok);
+    if (tok) appendToCellInput(tok);            // 爪入力: lowercase (通常)
+  });
+  document.getElementById('staff-pick-pizz').addEventListener('click', () => {
+    const tok = selectedStaffToken();
+    if (tok) appendToCellInput(tok.toUpperCase()); // pizz入力: uppercase = ○囲み
   });
 
   renderStaff();
