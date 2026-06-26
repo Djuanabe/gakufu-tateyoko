@@ -111,8 +111,8 @@ body {
   background: rgba(255,254,247,0.85);
   padding: 1px 2px; pointer-events: none;
 }
-/* small gap between measures shows the double bar line */
-.measure + .measure { border-right: 4px double #222; }
+/* 小節ごとの区切り線: 半拍線と同じ細さ */
+.measure + .measure { border-right: 1px solid #888; }
 
 .cell {
   flex: 0 0 auto;
@@ -279,8 +279,8 @@ body {
 .cell .rest { font-size: 1em; color: #333; }
 .cell .unknown { color: #c0392b; font-size: 0.7em; }
 
-/* Beat divider: full-width heavy line. No sixteenth lines at all. */
-.cell.beat-end { border-bottom: 2px solid #444; }
+/* Beat divider: full-width line, same thinness as the half-beat line. */
+.cell.beat-end { border-bottom: 1px solid #888; }
 /* Eighth divider (half-beat): short line, 1/4 of the frame width, flush left. */
 .cell.eighth-end::after {
   content: '';
@@ -295,7 +295,7 @@ body {
 /* Tuplet block: occupies its full beats; bottom is a beat line. */
 .tuplet-block {
   position: relative;
-  border-bottom: 2px solid #444;
+  border-bottom: 1px solid #888;
 }
 /* Short tick where the tuplet crosses an internal beat boundary (does not
    reach across the note names). */
@@ -471,39 +471,36 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 18px;
 }
 
-/* One output page = B4 landscape holding two side-by-side area frames. */
+/* One output page = B4 landscape; the framed blocks are centred with margins. */
 .dock-page {
   width: 1300px; height: 920px;     /* B4 landscape ratio ≈ 364:257 */
   background: #fffef7;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  display: flex; flex-direction: row;   /* left area | right area */
-  gap: 14px;
-  padding: 18px 10px;
+  display: flex; flex-direction: row; flex-wrap: nowrap;
+  align-items: center; justify-content: center;
+  gap: 28px;
+  padding: 18px;
   box-sizing: border-box;
   flex: 0 0 auto;
 }
-/* Each area = the OUTER FRAME (one of the two boxes per page), double line.
-   Its columns are top-aligned and the block is centred with small margins. */
+/* Each area = the OUTER FRAME (one of the two boxes per page). It hugs its own
+   columns tightly (no padding) so the frame sticks to the beat lines. */
 .dock-area {
-  flex: 1 1 0;
-  border: 3px double #222;             /* 外枠（1ページに2つ） */
-  display: flex; align-items: center; justify-content: center;
-  padding: 10px 4px;
-  overflow: hidden;
+  display: inline-flex;
+  border: 1px solid #222;              /* 外枠（1ページに2つ）。拍線と同じ細さ */
+  background: #fffef7;
 }
 .dock-area-inner {
   display: flex; flex-direction: row-reverse;  /* columns read right-to-left */
   align-items: flex-start;
   gap: 0;                              /* 列同士は隣接 */
 }
-/* One column = a fixed-size 16-beat block (4 measures of 4/4). Same shape/size
-   always; blank/partial columns just lose their inner divider lines. */
+/* One column = a 16-beat block, sized to its own content (partial blocks are
+   shorter, so blank space carries no lines at all). */
 .dock-col {
   display: flex; flex-direction: column;
   width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
-  height: 820px;                       /* 16 beats + 小節区切り */
   box-sizing: border-box;
-  overflow: hidden;
   background: #fffef7;
   flex: 0 0 auto;
   border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
@@ -514,8 +511,8 @@ body {
 .dock-col.block-start { border-right: 3px solid #222; }
 .dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col .measure { border-right: none; width: 100%; }
-/* 小節ごとの区切りは二重線（縦に積むので上罫） */
-.dock-col .measure + .measure { border-top: 4px double #222; }
+/* 小節ごとの区切りは半拍線と同じ細さ */
+.dock-col .measure + .measure { border-top: 1px solid #888; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {
@@ -530,8 +527,10 @@ body {
   #dock-preview-overlay .dock-preview-bar { display: none; }
   .dock-preview-shell { width: auto; height: auto; box-shadow: none; }
   .dock-preview { display: block; overflow: visible; height: auto; padding: 0; gap: 0; background: #fff; }
+  /* Match the physical B4 page exactly so the browser does NOT scale the
+     content (scaling rounds away 1px column separators in the PDF). */
   .dock-page {
-    width: 100%; height: 100vh; box-shadow: none; margin: 0;
+    width: 364mm; height: 257mm; box-shadow: none; margin: 0;
     page-break-after: always; break-after: page;
   }
   .dock-page:last-child { page-break-after: auto; break-after: auto; }
