@@ -34,136 +34,135 @@ function cellHasContent(c) {
   return !!(c && ((c.notes && c.notes.length > 0) || c.rest || c.sustain || c.unconverted));
 }
 
+// Build one measure as a vertical column element (reused by the editor and the
+// docked PDF preview). opts:
+//   instrumentType : string used for the string labels
+//   tunings        : tuning sections (for the 調弦変更 badge)
+//   isCursorCell   : (cellIdx) => bool  (editor cursor; omit for read-only)
+function buildMeasureColumn(m, mIdx, opts) {
+  const type = opts.instrumentType;
+  const tunings = opts.tunings;
+  const cursorHere = opts.isCursorCell || (() => false);
+
+  const mEl = document.createElement('div');
+  mEl.className = 'measure';
+  mEl.dataset.measure = mIdx;
+
+  const ts = m.timeSignature;
+  const perBeat = Math.max(1, Math.round(16 / ts.den));        // sixteenth cells per beat (4/4 -> 4)
+  const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2)); // 4/4 -> 2
+  const beatH = eighthsPerBeat * H8;
+
+  // mark a tuning change that begins at this measure
+  if (tunings && tunings.some(t => t.fromMeasure === mIdx && mIdx > 0)) {
+    mEl.classList.add('tuning-change');
+    const badge = document.createElement('div');
+    badge.className = 'tuning-badge';
+    badge.textContent = '調弦変更';
+    mEl.appendChild(badge);
+  }
+
+  const cells = m.cells;
+  let i = 0;
+  while (i < cells.length) {
+    const cell = cells[i];
+
+    // ---- Tuplet block (redistributed over its beats) ----
+    if (cell.tuplet && cell.tuplet.pos === 0) {
+      const t = cell.tuplet;
+      const span = t.span;
+      const blockH = t.beats * beatH;
+      const slotH = blockH / t.n;
+      const block = document.createElement('div');
+      block.className = 'tuplet-block';
+      block.style.height = blockH + 'px';
+
+      for (let s = 0; s < t.n; s++) {
+        const idx = i + s;
+        const cEl = renderCell(cells[idx], type);
+        sizeCell(cEl, slotH);
+        cEl.classList.add('tuplet');
+        cEl.dataset.measure = mIdx;
+        cEl.dataset.cell = idx;
+        cEl.dataset.tupletId = t.id;
+        cEl.dataset.tupletN = t.n;
+        if (cursorHere(idx)) cEl.classList.add('active');
+        block.appendChild(cEl);
+      }
+      // short ticks where the tuplet crosses an internal beat boundary
+      for (let b = 1; b < t.beats; b++) {
+        const tick = document.createElement('div');
+        tick.className = 'tuplet-beat-tick';
+        tick.style.top = (b * beatH) + 'px';
+        block.appendChild(tick);
+      }
+      mEl.appendChild(block);
+      i += span;
+      continue;
+    }
+
+    // ---- Normal eighth pair (cells i, i+1) ----
+    const next = cells[i + 1];
+    const subdivided = cellHasContent(next) || cursorHere(i + 1);
+    const endsBeat = ((i + 2) % perBeat === 0);
+
+    if (subdivided) {
+      const a = renderCell(cell, type);
+      sizeCell(a, H16);
+      a.dataset.measure = mIdx; a.dataset.cell = i;
+      if (cursorHere(i)) a.classList.add('active');
+      mEl.appendChild(a); // no divider line under the first sixteenth
+
+      const b = renderCell(next || newCell(), type);
+      sizeCell(b, H16);
+      b.dataset.measure = mIdx; b.dataset.cell = i + 1;
+      b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (cursorHere(i + 1)) b.classList.add('active');
+      mEl.appendChild(b);
+    } else {
+      const a = renderCell(cell, type);
+      sizeCell(a, H8);
+      a.dataset.measure = mIdx; a.dataset.cell = i;
+      a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (cursorHere(i)) a.classList.add('active');
+      mEl.appendChild(a);
+    }
+    i += 2;
+  }
+  return mEl;
+}
+
 function renderScore(state) {
   const root = document.getElementById('score');
   root.innerHTML = '';
-  const type = state.sheet.instrumentType;
-  const multiPart = state.sheet.parts.length > 1;
-  const PART_LABELS = ['第一', '第二', '第三', '第四'];
-  let firstSys = null;
+  const sheet = state.sheet;
+  const measures = sheet.parts[0].measures;
 
-  state.sheet.parts.forEach((part, partIdx) => {
   const sys = document.createElement('div');
-  sys.className = 'system' + (multiPart && state.cursor.part === partIdx ? ' active-part' : '');
-  sys.dataset.part = partIdx;
-  if (firstSys === null) firstSys = sys;
+  sys.className = 'system';
+  root.appendChild(sys);
 
-  if (multiPart) {
-    const lbl = document.createElement('div');
-    lbl.className = 'part-label';
-    lbl.textContent = PART_LABELS[partIdx] || ('第' + (partIdx + 1));
-    sys.appendChild(lbl);
-  }
-
-  part.measures.forEach((m, mIdx) => {
-    const mEl = document.createElement('div');
-    mEl.className = 'measure';
-    mEl.dataset.measure = mIdx;
-
-    const ts = m.timeSignature;
-    const perBeat = Math.max(1, Math.round(16 / ts.den));        // sixteenth cells per beat (4/4 -> 4)
-    const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2)); // 4/4 -> 2
-    const beatH = eighthsPerBeat * H8;
-
-    // mark a tuning change that begins at this measure
-    if (state.sheet.tunings &&
-        state.sheet.tunings.some(t => t.fromMeasure === mIdx && mIdx > 0)) {
-      mEl.classList.add('tuning-change');
-      const badge = document.createElement('div');
-      badge.className = 'tuning-badge';
-      badge.textContent = '調弦変更';
-      mEl.appendChild(badge);
-    }
-
-    const cursorHere = (idx) =>
-      state.cursor.part === partIdx && state.cursor.measure === mIdx && state.cursor.cell === idx;
-    const cells = m.cells;
-
-    let i = 0;
-    while (i < cells.length) {
-      const cell = cells[i];
-
-      // ---- Tuplet block (redistributed over its beats) ----
-      if (cell.tuplet && cell.tuplet.pos === 0) {
-        const t = cell.tuplet;
-        const span = t.span;
-        const blockH = t.beats * beatH;
-        const slotH = blockH / t.n;
-        const block = document.createElement('div');
-        block.className = 'tuplet-block';
-        block.style.height = blockH + 'px';
-
-        for (let s = 0; s < t.n; s++) {
-          const idx = i + s;
-          const cEl = renderCell(cells[idx], type);
-          sizeCell(cEl, slotH);
-          cEl.classList.add('tuplet');
-          cEl.dataset.measure = mIdx;
-          cEl.dataset.cell = idx;
-          cEl.dataset.tupletId = t.id;
-          cEl.dataset.tupletN = t.n;
-          if (cursorHere(idx)) cEl.classList.add('active');
-          block.appendChild(cEl);
-        }
-        // short ticks where the tuplet crosses an internal beat boundary
-        for (let b = 1; b < t.beats; b++) {
-          const tick = document.createElement('div');
-          tick.className = 'tuplet-beat-tick';
-          tick.style.top = (b * beatH) + 'px';
-          block.appendChild(tick);
-        }
-        mEl.appendChild(block);
-        i += span;
-        continue;
-      }
-
-      // ---- Normal eighth pair (cells i, i+1) ----
-      const next = cells[i + 1];
-      const subdivided = cellHasContent(next) || cursorHere(i + 1);
-      const endsBeat = ((i + 2) % perBeat === 0);
-
-      if (subdivided) {
-        const a = renderCell(cell, type);
-        sizeCell(a, H16);
-        a.dataset.measure = mIdx; a.dataset.cell = i;
-        if (cursorHere(i)) a.classList.add('active');
-        mEl.appendChild(a); // no divider line under the first sixteenth
-
-        const b = renderCell(next || newCell(), type);
-        sizeCell(b, H16);
-        b.dataset.measure = mIdx; b.dataset.cell = i + 1;
-        b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
-        if (cursorHere(i + 1)) b.classList.add('active');
-        mEl.appendChild(b);
-      } else {
-        const a = renderCell(cell, type);
-        sizeCell(a, H8);
-        a.dataset.measure = mIdx; a.dataset.cell = i;
-        a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
-        if (cursorHere(i)) a.classList.add('active');
-        mEl.appendChild(a);
-      }
-      i += 2;
-    }
+  measures.forEach((m, mIdx) => {
+    const mEl = buildMeasureColumn(m, mIdx, {
+      instrumentType: sheet.instrumentType,
+      tunings: sheet.tunings,
+      isCursorCell: (idx) => state.cursor.measure === mIdx && state.cursor.cell === idx
+    });
     sys.appendChild(mEl);
   });
-  root.appendChild(sys);
-  }); // parts
 
   // Draw tuplet brackets (needs the cells laid out in the DOM for offsets).
   drawTupletBrackets(root);
 
-  // Overlay free-form drawings (lines / waves / arrows) on the first part.
-  if (typeof renderDrawings === 'function' && firstSys) renderDrawings(firstSys, state);
+  // Overlay free-form drawings (lines / waves / arrows).
+  if (typeof renderDrawings === 'function') renderDrawings(sys, state);
 
   // attach click handlers for cell selection
   root.querySelectorAll('.cell').forEach(el => {
     el.addEventListener('click', () => {
       const mIdx = parseInt(el.dataset.measure, 10);
       const cIdx = parseInt(el.dataset.cell, 10);
-      const sysEl = el.closest('.system');
-      const partIdx = sysEl ? (parseInt(sysEl.dataset.part, 10) || 0) : 0;
-      State.setCursor(mIdx, cIdx, partIdx);
+      State.setCursor(mIdx, cIdx, 0);
       renderScore(State);
       const inp = document.getElementById('cell-input');
       inp.focus();
@@ -192,8 +191,7 @@ function renderScore(state) {
   // Update the measure-info readout (e.g. "5 / 8")
   const info = document.getElementById('measure-info');
   if (info) {
-    const partTxt = state.sheet.parts.length > 1 ? `［${PART_LABELS[state.cursor.part] || ('第' + (state.cursor.part + 1))}］ ` : '';
-    info.textContent = `${partTxt}${state.cursor.measure + 1} / ${state.activeMeasures().length}小節`;
+    info.textContent = `${state.cursor.measure + 1} / ${measures.length}小節`;
   }
 }
 

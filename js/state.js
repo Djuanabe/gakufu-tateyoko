@@ -114,24 +114,8 @@ const State = {
     }
   },
 
-  /* Ensemble parts (重奏) ---------------------------------------------- */
-  partCount() { return this.sheet.parts.length; },
-  hasSecondPart() { return this.sheet.parts.length > 1; },
+  // The measures of the score being edited (single part; parts[0]).
   activeMeasures() { return this.sheet.parts[this.cursor.part].measures; },
-
-  // Add a second part, seeded with the same number of empty measures (matching
-  // each measure's time signature) as the first part.
-  addSecondPart() {
-    if (this.sheet.parts.length > 1) return;
-    const measures = this.sheet.parts[0].measures.map(m =>
-      newMeasure(m.timeSignature.num, m.timeSignature.den));
-    this.sheet.parts.push({ measures });
-  },
-  removeSecondPart() {
-    if (this.sheet.parts.length < 2) return;
-    this.sheet.parts.pop();
-    if (this.cursor.part > this.sheet.parts.length - 1) this.cursor.part = 0;
-  },
 
   setInstrumentType(type) {
     this.sheet.instrumentType = type;

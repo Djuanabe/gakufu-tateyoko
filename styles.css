@@ -76,12 +76,9 @@ body {
   height: min(460px, calc(100vh - 230px));
   overflow-x: auto;
   overflow-y: auto;
-  /* Parts (重奏) stack as 段 top-to-bottom, each right-aligned (music reads
-     right-to-left). */
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 14px;
+  flex-direction: row-reverse;
+  align-items: flex-start;
 }
 
 /* Each "system" is one horizontal row of music (measures right-to-left). */
@@ -91,24 +88,8 @@ body {
   gap: 0;
   border: 2px solid #222;
   background: #fffef7;
+  align-self: start;
   position: relative;   /* positioning context for the drawing overlay */
-}
-/* highlight the part currently being edited */
-.system.active-part { box-shadow: 0 0 0 2px #c98a14; }
-
-/* Part label (第一/第二…) sits at the right end (start of the right-to-left line). */
-.part-label {
-  flex: 0 0 auto;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  writing-mode: vertical-rl;
-  padding: 4px 2px;
-  background: #2d2a26;
-  color: #f4ecd8;
-  font-size: 0.9em;
-  letter-spacing: 2px;
 }
 
 /* One measure = one vertical column. */
@@ -384,3 +365,56 @@ body {
 .staff-note.sel { fill: #c0392b; stroke: #c0392b; stroke-width: 3; }
 .staff-hit { cursor: pointer; }
 .staff-hit:hover { fill: rgba(201,138,20,0.12); }
+
+/* ===== Save library / ensemble docking / PDF export ===== */
+.export-content { min-width: 520px; max-width: 80vw; }
+.export-sec { margin: 0.8em 0; padding-top: 0.6em; border-top: 1px solid #ddd; }
+.export-sec h3 { margin: 0 0 0.4em; font-size: 1em; }
+.lib-row { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; }
+#save-name { flex: 1; min-width: 12em; padding: 0.3em 0.4em; border: 1px solid #888; border-radius: 3px; }
+
+.lib-list { list-style: none; margin: 0; padding: 0; max-height: 30vh; overflow-y: auto; }
+.lib-list li { display: flex; align-items: center; gap: 0.5em; padding: 0.25em 0; border-bottom: 1px dotted #ccc; }
+.lib-list .lib-name { flex: 1; }
+.lib-list .lib-empty { color: #888; border: none; }
+
+.dock-select { display: flex; flex-direction: column; gap: 0.2em; margin: 0.4em 0; max-height: 26vh; overflow-y: auto; }
+.dock-item { display: flex; align-items: center; gap: 0.5em; padding: 0.15em 0; }
+.dock-item .dock-roman { margin-left: auto; font-weight: bold; color: #c98a14; }
+
+/* Preview overlay */
+.dock-preview-shell {
+  background: #fff; border-radius: 6px; box-shadow: 0 0 0 2px #888, 0 8px 30px rgba(0,0,0,0.4);
+  width: 92vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.dock-preview-bar {
+  display: flex; align-items: center; gap: 0.8em; padding: 0.5em 0.8em;
+  background: #2d2a26; color: #f4ecd8;
+}
+.dock-preview-bar span { margin-right: auto; }
+.dock-preview { flex: 1; overflow: auto; padding: 12px; background: #fffef7;
+  display: flex; flex-direction: row-reverse; align-items: flex-start; }
+
+/* Interleaved ensemble columns */
+.system.docked { display: flex; flex-direction: row-reverse; border: 2px solid #222; background: #fffef7; }
+.dock-col { display: flex; flex-direction: column; }
+.dock-col.group-end { border-left: 3px double #222; }
+.dock-col-label {
+  text-align: center; font-size: 0.85em; padding: 2px 0; background: #2d2a26; color: #f4ecd8;
+}
+.dock-col.inst-1 { background: #f1f6ff; }
+.dock-col.inst-2 { background: #fff5f0; }
+.dock-col.inst-3 { background: #f1fff3; }
+.dock-col .measure { border-right: none; }
+.dock-blank { min-height: 200px; }
+
+/* Print → PDF: show only the docked preview */
+@media print {
+  @page { margin: 8mm; }
+  body.printing > *:not(#dock-preview-overlay) { display: none !important; }
+  #dock-preview-overlay { position: static; background: none; display: block; }
+  #dock-preview-overlay .dock-preview-bar { display: none; }
+  .dock-preview-shell { width: auto; height: auto; box-shadow: none; }
+  .dock-preview { display: block; overflow: visible; height: auto; padding: 0; }
+  .dock-preview .system.docked { width: max-content; }
+}

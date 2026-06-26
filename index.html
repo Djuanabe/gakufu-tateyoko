@@ -27,10 +27,9 @@
     </label>
     <span id="measure-info" style="font-size:0.85em"></span>
     <button id="open-tuning">調弦表</button>
-    <button id="toggle-part">重奏追加</button>
-    <button id="switch-part" style="display:none">パート切替</button>
     <button id="save">保存</button>
     <button id="load">読込</button>
+    <button id="open-export">保存ライブラリ / PDF出力</button>
   </div>
 </header>
 
@@ -156,12 +155,59 @@
   </div>
 </div>
 
+<div id="export-modal" class="modal hidden">
+  <div class="modal-content export-content">
+    <h2>保存ライブラリ / PDF出力</h2>
+
+    <section class="export-sec">
+      <h3>現在の楽譜を名前を付けて保存</h3>
+      <div class="lib-row">
+        <input type="text" id="save-name" placeholder="例: 第一箏 / さくら 等" autocomplete="off">
+        <button id="lib-save">保存</button>
+      </div>
+    </section>
+
+    <section class="export-sec">
+      <h3>保存済みの楽譜</h3>
+      <ul id="lib-list" class="lib-list"></ul>
+    </section>
+
+    <section class="export-sec">
+      <h3>ドッキングしてPDF出力（重奏）</h3>
+      <p class="hint">出力する楽譜にチェックを入れ、上から Ⅰ・Ⅱ・… の順で割り当てられます。
+      列は「Ⅰの1列目 → Ⅱの1列目 → Ⅰの2列目 …」と交互に並びます。</p>
+      <div id="dock-select" class="dock-select"></div>
+      <div class="lib-row">
+        <button id="dock-preview-btn">プレビュー</button>
+        <button id="dock-pdf-btn">PDF出力</button>
+      </div>
+    </section>
+
+    <div class="modal-actions">
+      <button id="export-close">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Docked ensemble preview / print target -->
+<div id="dock-preview-overlay" class="modal hidden">
+  <div class="dock-preview-shell">
+    <div class="dock-preview-bar">
+      <span>出力プレビュー</span>
+      <button id="dock-print-btn">この内容でPDF出力</button>
+      <button id="dock-preview-close">閉じる</button>
+    </div>
+    <div id="dock-preview" class="dock-preview"></div>
+  </div>
+</div>
+
 <script src="js/state.js"></script>
 <script src="js/tuning.js"></script>
 <script src="js/parser.js"></script>
 <script src="js/staff.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/render.js"></script>
+<script src="js/export.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

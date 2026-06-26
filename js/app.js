@@ -81,15 +81,6 @@ function refresh() {
   renderScore(State);
 }
 
-// Keep the 重奏 toolbar buttons in sync with how many parts exist.
-function updatePartControls() {
-  const has = State.hasSecondPart();
-  const toggle = document.getElementById('toggle-part');
-  const sw = document.getElementById('switch-part');
-  if (toggle) toggle.textContent = has ? '重奏解除' : '重奏追加';
-  if (sw) sw.style.display = has ? '' : 'none';
-}
-
 /* Undo / redo: snapshot the whole sheet + cursor before each mutation. */
 const History = {
   undoStack: [],
@@ -423,28 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh();
   });
 
-  document.getElementById('toggle-part').addEventListener('click', () => {
-    if (State.hasSecondPart()) {
-      if (!confirm('第二パートを削除します。よろしいですか？')) return;
-      History.push();
-      State.removeSecondPart();
-    } else {
-      History.push();
-      State.addSecondPart();
-      State.setCursor(0, 0, 1); // jump to editing the new part
-    }
-    updatePartControls();
-    refresh();
-    document.getElementById('cell-input').focus();
-  });
-  document.getElementById('switch-part').addEventListener('click', () => {
-    if (!State.hasSecondPart()) return;
-    const next = (State.cursor.part + 1) % State.partCount();
-    State.setCursor(State.cursor.measure, State.cursor.cell, next);
-    refresh();
-    document.getElementById('cell-input').focus();
-  });
-
   document.getElementById('open-tuning').addEventListener('click', openTuningModal);
   document.getElementById('tuning-close').addEventListener('click', () => {
     document.getElementById('tuning-modal').classList.add('hidden');
@@ -507,7 +476,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = localStorage.getItem('gakufu');
     if (data && State.deserialize(data)) {
       document.getElementById('instrument-type').value = State.sheet.instrumentType;
-      updatePartControls();
       refresh();
       alert('読み込みました');
     } else {
@@ -523,7 +491,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderStaff();
-  updatePartControls();
   refresh();
   input.focus();
 });
