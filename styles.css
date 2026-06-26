@@ -132,8 +132,9 @@ body {
   gap: 0;
   width: 100%;
 }
-/* tighten the spacing between adjacent chord note names */
-.cell .stack.chord .note-row + .note-row { margin-left: -0.12em; }
+/* tighten the spacing between adjacent chord note names (only when neither
+   side is a circled note — circled rows manage their own spacing). */
+.cell .stack.chord .note-row:not(.circled) + .note-row:not(.circled) { margin-left: -0.12em; }
 /* one note = [mark][kanji]; the ヲ/オ mark is an in-flow SIZED character to the
    LEFT of the kanji (its width counts in the layout, like the note name). */
 .cell .note-row {
@@ -147,18 +148,17 @@ body {
   font-size: 1em;       /* same height as the note name */
   color: #333;
   line-height: 1;
-  /* A sized character: 0.75em-wide box (= 1.5× the old 0.5 squeeze). The glyph
-     is scaled to fill the box exactly, so the mark butts flush against the note
-     on its right AND the previous chord note on its left (no gap either side). */
-  display: inline-block;
-  width: 0.75em;
-  overflow: hidden;
-}
-.cell .note-row .left-mark .lm-glyph {
-  display: inline-block;
-  transform: scaleX(0.75);
-  transform-origin: left center;
   white-space: nowrap;
+  /* Squeeze horizontally and anchor to the right edge so the visual ink ends
+     flush at the box's right edge (against its own kanji). Then pull the
+     entire box left with a big negative margin to remove the empty space on
+     the left side. Tiny negative margin-right covers the kanji's own left
+     bearing. */
+  display: inline-block;
+  transform: scaleX(0.6);
+  transform-origin: right center;
+  margin-left: -0.42em;
+  margin-right: -0.08em;
 }
 .cell .note-row .kanji {
   flex: 0 0 auto;
@@ -224,17 +224,20 @@ body {
   align-items: center;
   justify-content: center;
 }
-/* 大文字入力 = この音のみを個別に正円で囲む（和音内で混在可、左に並ぶ）。 */
+/* 大文字入力 = この音のみを個別に正円で囲む（和音内で混在可、左に並ぶ）。
+   親 stack の scaleX が掛かるため和音では縦長の楕円になります(音数が多いほど)。
+   layout は正方形なので隣の音とは重なりません。 */
 .cell .note-row.circled {
   border: 1.5px solid #333;
   border-radius: 50%;
-  padding: 0.06em 0.18em;
-  font-size: 0.66em;
-  aspect-ratio: 1 / 1;
+  font-size: 0.7em;
+  width: 1.3em;       /* 固定サイズの正方形にして円形を担保 */
+  height: 1.3em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin: 0 0.05em;
+  flex: 0 0 auto;     /* 押しつぶされないように */
 }
 .cell .sustain { font-size: 1.1em; }
 .cell .sustain.tri-dot {

@@ -324,14 +324,9 @@ function renderCell(cell, instrumentType) {
     // Per-note circling: notes flagged `circled` (=入力で大文字) go to the LEFT
     // of the uncircled ones. Preserve original order within each group.
     const orderedNotes = notes.slice().sort((a, b) => (b.circled ? 1 : 0) - (a.circled ? 1 : 0));
-    // Counter-scale for circled notes when the parent stack is squeezed,
-    // so each per-note circle stays round (not oval).
-    const stackSx = notes.length > 1 ? 1 / (1 + (notes.length - 1) * 0.5) : 1;
-    const invSx = (1 / stackSx).toFixed(3);
     orderedNotes.forEach(n => {
       const row = document.createElement('div');
       row.className = 'note-row' + (n.circled ? ' circled' : '');
-      if (n.circled && stackSx < 1) row.style.transform = `scaleX(${invSx})`;
 
       // ヲ/オ mark: a 0.75em-wide box (sized character) with the glyph squeezed
       // to fill it, so it sits flush against the note on both sides. Only added
@@ -339,10 +334,7 @@ function renderCell(cell, instrumentType) {
       if (n.leftMark) {
         const lm = document.createElement('span');
         lm.className = 'left-mark';
-        const g = document.createElement('span');
-        g.className = 'lm-glyph';
-        g.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
-        lm.appendChild(g);
+        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
         row.appendChild(lm);
       }
 
