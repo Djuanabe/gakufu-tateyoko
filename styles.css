@@ -103,6 +103,13 @@ body {
   border-right: 1px solid #aaa;
 }
 .measure:first-child { border-right: none; }
+/* 編集画面: 各小節カラム上部に小さく小節番号 */
+.measure-num {
+  position: absolute; top: 0; left: 0; z-index: 6;
+  font-size: 10px; line-height: 1; color: #888;
+  background: rgba(255,254,247,0.85);
+  padding: 1px 2px; pointer-events: none;
+}
 /* small gap between measures shows the double bar line */
 .measure + .measure { border-right: 4px double #222; }
 
@@ -482,19 +489,24 @@ body {
 .dock-area-inner {
   display: flex; flex-direction: row-reverse;  /* columns read right-to-left */
   align-items: flex-start;
-  gap: 10px;
+  gap: 0;                              /* 列同士は隣接 */
 }
-/* One column = up to 16 beats (e.g. 4 measures of 4/4) stacked vertically. */
+/* One column = a fixed-size 16-beat frame (4 measures of 4/4). Always shown
+   at the same shape/size; blank/partial columns just lose their inner divider
+   lines, keeping the outer frame. */
 .dock-col {
   display: flex; flex-direction: column;
-  border: 4px double #222;          /* 外枠は二重線 */
+  width: 66px;                        /* 3 × OUT_H8 (2:3 beat box) */
+  height: 730px;                      /* 16 beats + 小節区切り + 枠 */
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 4px double #222;            /* 外枠は常に二重線 */
   background: #fffef7;
   flex: 0 0 auto;
 }
-.dock-col .measure { border-right: none; }
+.dock-col .measure { border-right: none; width: 100%; }
 /* 小節ごとの区切りも二重線（縦に積むので上罫） */
 .dock-col .measure + .measure { border-top: 4px double #222; }
-.dock-blank { min-height: 120px; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {

@@ -21,7 +21,8 @@
     <label>拍子:
       <input type="number" id="ts-num" value="4" min="1" max="16" style="width:3em"> /
       <input type="number" id="ts-den" value="4" min="1" max="16" style="width:3em">
-      <button id="apply-ts">この小節以降に適用</button>
+      <input type="number" id="ts-from" min="1" style="width:4em" placeholder="小節" title="適用開始小節（空欄なら現在の小節）">
+      <button id="apply-ts">小節から適用</button>
     </label>
     <button id="add-measure">小節追加</button>
     <label>移動:

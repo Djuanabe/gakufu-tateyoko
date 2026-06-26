@@ -151,6 +151,11 @@ function renderScore(state) {
       tunings: sheet.tunings,
       isCursorCell: (idx) => state.cursor.measure === mIdx && state.cursor.cell === idx
     });
+    // measure number (editor only) at the top of each column
+    const num = document.createElement('div');
+    num.className = 'measure-num';
+    num.textContent = mIdx + 1;
+    mEl.appendChild(num);
     sys.appendChild(mEl);
   });
 

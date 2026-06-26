@@ -420,7 +420,12 @@ document.addEventListener('DOMContentLoaded', () => {
     History.push();
     const num = parseInt(document.getElementById('ts-num').value, 10) || 4;
     const den = parseInt(document.getElementById('ts-den').value, 10) || 4;
-    State.changeTimeSignatureFromHere(num, den);
+    const fromRaw = parseInt(document.getElementById('ts-from').value, 10);
+    const total = State.activeMeasures().length;
+    // 小節番号(1始まり)指定があればそこから、無ければ現在の小節から
+    const from = (!isNaN(fromRaw)) ? Math.max(0, Math.min(fromRaw - 1, total - 1)) : undefined;
+    State.changeTimeSignatureFromHere(num, den, from);
+    if (from != null) State.setCursor(from, 0);
     refresh();
   });
 

@@ -356,11 +356,12 @@ const State = {
     this.sheet.parts.forEach(p => p.measures.push(newMeasure(ts.num, ts.den)));
   },
 
-  changeTimeSignatureFromHere(num, den) {
+  changeTimeSignatureFromHere(num, den, fromMeasure) {
     this.sheet.timeSignature = {num, den};
-    // re-shape current and subsequent measures in every part
+    const from = (fromMeasure != null) ? fromMeasure : this.cursor.measure;
+    // re-shape that measure and subsequent ones in every part
     this.sheet.parts.forEach(part => {
-      for (let i = this.cursor.measure; i < part.measures.length; i++) {
+      for (let i = from; i < part.measures.length; i++) {
         const old = part.measures[i];
         const fresh = newMeasure(num, den);
         // preserve existing cells where possible

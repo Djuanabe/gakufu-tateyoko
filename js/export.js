@@ -118,7 +118,12 @@ function refreshLibraryUI() {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.value = name;
-      cb.addEventListener('change', updateDockAssignments);
+      cb.checked = dockOrder.includes(name);
+      cb.addEventListener('change', () => {
+        if (cb.checked) { if (!dockOrder.includes(name)) dockOrder.push(name); }
+        else { dockOrder = dockOrder.filter(n => n !== name); }
+        updateDockAssignments();
+      });
       const txt = document.createElement('span');
       txt.textContent = name;
       row.appendChild(cb);
@@ -126,16 +131,23 @@ function refreshLibraryUI() {
       dock.appendChild(row);
     });
   }
+  // drop names no longer present in the library
+  dockOrder = dockOrder.filter(n => names.includes(n));
+  updateDockAssignments();
 }
 
-// Show Ⅰ/Ⅱ/… next to each checked dock item, in check order.
+// Order in which scores were checked (= Ⅰ, Ⅱ, … assignment for docking).
+let dockOrder = [];
+
+// Show Ⅰ/Ⅱ/… next to each dock item, following the CHECK order.
 function updateDockAssignments() {
-  const checked = [...document.querySelectorAll('#dock-select input:checked')];
   document.querySelectorAll('#dock-select .dock-item').forEach(row => {
     const tag = row.querySelector('.dock-roman');
     if (tag) tag.remove();
   });
-  checked.forEach((cb, idx) => {
+  dockOrder.forEach((name, idx) => {
+    const cb = document.querySelector(`#dock-select input[value="${CSS.escape(name)}"]`);
+    if (!cb) return;
     const span = document.createElement('span');
     span.className = 'dock-roman';
     span.textContent = ROMAN[idx] || ('第' + (idx + 1));
@@ -144,9 +156,10 @@ function updateDockAssignments() {
 }
 
 function selectedDockSheets() {
-  const checked = [...document.querySelectorAll('#dock-select input:checked')];
   const lib = libLoad();
-  return checked.map(cb => ({ name: cb.value, sheet: normalizeSheet(lib[cb.value]) }));
+  return dockOrder
+    .filter(name => lib[name])
+    .map(name => ({ name, sheet: normalizeSheet(lib[name]) }));
 }
 
 /* ---- Docked (interleaved) rendering ------------------------------------- */
@@ -198,25 +211,29 @@ function renderDockedInto(container, entries) {
     });
   });
 
-  // Distribute columns into B4 pages: right area = first 8 (read first), left
-  // area = next 8. Each area lays its columns right-to-left and centres them.
-  let start = 0;
-  do {
-    const pageCols = columns.slice(start, start + COLS_PER_PAGE);
+  // The grid is fixed: every area always shows 8 same-size framed columns.
+  // Pad with empty columns so the 16拍×8列 layout never collapses — blanks
+  // simply have no inner divider lines (just the outer frame).
+  const emptyCol = () => { const c = document.createElement('div'); c.className = 'dock-col empty'; return c; };
+  const pages = Math.max(1, Math.ceil(columns.length / COLS_PER_PAGE));
+  const mkArea = cols => {
+    const area = document.createElement('div'); area.className = 'dock-area';
+    const inner = document.createElement('div'); inner.className = 'dock-area-inner';
+    cols.forEach(c => inner.appendChild(c));
+    area.appendChild(inner);
+    return area;
+  };
+  for (let pg = 0; pg < pages; pg++) {
+    const pageCols = [];
+    for (let i = 0; i < COLS_PER_PAGE; i++) {
+      pageCols.push(columns[pg * COLS_PER_PAGE + i] || emptyCol());
+    }
     const page = document.createElement('div');
     page.className = 'dock-page';
-    const mkArea = cols => {
-      const area = document.createElement('div'); area.className = 'dock-area';
-      const inner = document.createElement('div'); inner.className = 'dock-area-inner';
-      cols.forEach(c => inner.appendChild(c));
-      area.appendChild(inner);
-      return area;
-    };
-    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));  // visually left (read 2nd)
+    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));   // visually left (read 2nd)
     page.appendChild(mkArea(pageCols.slice(0, COLS_PER_AREA))); // visually right (read 1st)
     container.appendChild(page);
-    start += COLS_PER_PAGE;
-  } while (start < columns.length);
+  }
 
   if (typeof drawTupletBrackets === 'function') drawTupletBrackets(container);
 }
