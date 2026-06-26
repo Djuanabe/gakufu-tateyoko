@@ -23,7 +23,9 @@ body {
 
 .workspace {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  /* minmax(0,1fr): keep the editor column within the available width so the
+     score scrolls INSIDE its fixed viewport instead of widening the page. */
+  grid-template-columns: 400px minmax(0, 1fr);
   gap: 0.5em;
   padding: 0.5em;
   min-height: calc(100vh - 60px);
@@ -71,10 +73,10 @@ body {
   background: #fffef7;
   padding: 0.6em;
   border: 1px solid #ccc;
-  /* Fill the panel width (no right-hand gap). Height fits one measure
-     (≈448px) yet shrinks on short screens so the page never overflows. */
+  /* Fixed-size viewport: the window itself does NOT resize with the browser;
+     navigate the score by scrolling inside it (both axes). */
   width: 100%;
-  height: min(460px, calc(100vh - 230px));
+  height: 480px;
   overflow-x: auto;
   overflow-y: auto;
   display: flex;
