@@ -171,7 +171,7 @@ function selectedDockSheets() {
 const BEATS_PER_COL = 16;
 const COLS_PER_AREA = 8;
 const COLS_PER_PAGE = COLS_PER_AREA * 2;
-const OUT_H8 = 22;   // shrunk eighth-cell height so 16 beats fit a B4 column
+const OUT_H8 = 25;   // eighth-cell height for output (16 beats fit a B4 column)
 
 function beatsOfMeasure(m) {
   return m ? (m.timeSignature.num * 4 / m.timeSignature.den) : 4;
@@ -192,11 +192,15 @@ function renderDockedInto(container, entries) {
   if (blk.length) blocks.push(blk);
 
   // Build one column per (block, instrument) in reading order.
+  const multiPart = entries.length > 1;
   const columns = [];
   blocks.forEach(measureIdxs => {
-    entries.forEach(entry => {
+    entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');
       col.className = 'dock-col';
+      // ensemble: the first instrument of each block starts a new time-block
+      // → thick divider on its (reading-)right side.
+      if (multiPart && instIdx === 0) col.classList.add('block-start');
       measureIdxs.forEach(k => {
         const m = entry.sheet.parts[0].measures[k];
         if (m) {

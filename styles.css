@@ -471,20 +471,24 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 18px;
 }
 
-/* One output page = B4 landscape, split into two side-by-side areas. */
+/* One output page = B4 landscape holding two side-by-side area frames. */
 .dock-page {
   width: 1300px; height: 920px;     /* B4 landscape ratio ≈ 364:257 */
   background: #fffef7;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   display: flex; flex-direction: row;   /* left area | right area */
+  gap: 14px;
+  padding: 18px 10px;
+  box-sizing: border-box;
   flex: 0 0 auto;
 }
-/* Each half: the column block is centred with margins (no divider between
-   halves). The inner block keeps the columns top-aligned with each other. */
+/* Each area = the OUTER FRAME (one of the two boxes per page), double line.
+   Its columns are top-aligned and the block is centred with small margins. */
 .dock-area {
   flex: 1 1 0;
+  border: 3px double #222;             /* 外枠（1ページに2つ） */
   display: flex; align-items: center; justify-content: center;
-  padding: 28px 24px;
+  padding: 10px 4px;
   overflow: hidden;
 }
 .dock-area-inner {
@@ -492,26 +496,35 @@ body {
   align-items: flex-start;
   gap: 0;                              /* 列同士は隣接 */
 }
-/* One column = a fixed-size 16-beat frame (4 measures of 4/4). Always shown
-   at the same shape/size; blank/partial columns just lose their inner divider
-   lines, keeping the outer frame. */
+/* One column = a fixed-size 16-beat block (4 measures of 4/4). Same shape/size
+   always; blank/partial columns just lose their inner divider lines. */
 .dock-col {
   display: flex; flex-direction: column;
-  width: 66px;                        /* 3 × OUT_H8 (2:3 beat box) */
-  height: 730px;                      /* 16 beats + 小節区切り + 枠 */
+  width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
+  height: 820px;                       /* 16 beats + 小節区切り */
   box-sizing: border-box;
   overflow: hidden;
-  border: 4px double #222;            /* 外枠は常に二重線 */
   background: #fffef7;
   flex: 0 0 auto;
+  border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
 }
+/* rightmost column of an area butts against the area frame — no own separator */
+.dock-area-inner > .dock-col:first-child { border-right: none; }
+/* n重奏: n列ごと(ブロック境界)の区切りは太線 */
+.dock-col.block-start { border-right: 3px solid #222; }
+.dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col .measure { border-right: none; width: 100%; }
-/* 小節ごとの区切りも二重線（縦に積むので上罫） */
+/* 小節ごとの区切りは二重線（縦に積むので上罫） */
 .dock-col .measure + .measure { border-top: 4px double #222; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {
   @page { size: B4 landscape; margin: 0; }
+  /* the half-beat divider is a background rectangle; force it (and any other
+     shaded element) to actually print instead of being dropped. */
+  #dock-preview-overlay, #dock-preview-overlay * {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
   body.printing > *:not(#dock-preview-overlay) { display: none !important; }
   #dock-preview-overlay { position: static; background: none; display: block; }
   #dock-preview-overlay .dock-preview-bar { display: none; }
