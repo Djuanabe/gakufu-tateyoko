@@ -89,7 +89,7 @@ body {
   display: flex;
   flex-direction: row-reverse;
   gap: 0;
-  border: 4px double #222;   /* 外枠は二重線 */
+  border: 3px double #222;   /* 外枠の二重線(=拍線と同じ太さの線×2) */
   background: #fffef7;
   align-self: start;
   position: relative;   /* positioning context for the drawing overlay */
@@ -116,6 +116,22 @@ body {
 /* 小節ごとの区切り線: 二重線 */
 /* 小節線: 拍線(1px)と同じ太さの線を2本(=3px double → 1px/1px隙間/1px) */
 .measure + .measure { border-right: 3px double #222; }
+/* 外枠の内側横線が小節区切り線の位置で交差して見えるのを防ぎ、
+   交差点を管状(=線が継続して見える)に見せる。
+   小節セパレータ(幅3px)と同じ幅の塗りで、外枠の内側横線(Y=2/底-1)だけを消す。 */
+.measure + .measure::before,
+.measure + .measure::after {
+  content: '';
+  position: absolute;
+  left: -3px;             /* = 直前の小節の border-right の左端 */
+  width: 3px;             /* 小節区切り線の幅 */
+  height: 1px;
+  background: #fffef7;    /* 譜面紙の色で塗り潰して内側横線を消す */
+  z-index: 5;
+  pointer-events: none;
+}
+.measure + .measure::before { top: -1px; }    /* 上側の内側横線を消す */
+.measure + .measure::after  { bottom: -1px; } /* 下側の内側横線を消す */
 
 .cell {
   flex: 0 0 auto;
@@ -490,7 +506,7 @@ body {
    It hugs its 8-column block tightly (no padding). */
 .dock-area {
   display: inline-flex;
-  border: 4px double #222;             /* 外枠（1ページに2つ）= 二重線 */
+  border: 3px double #222;             /* 外枠の二重線(=拍線と同じ太さの線×2) */
   background: #fffef7;
 }
 .dock-area-inner {
