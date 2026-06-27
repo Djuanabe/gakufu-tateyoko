@@ -552,7 +552,7 @@ body {
 .dock-col .measure { border-right: none; width: 100%; }
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
-.dock-col .measure + .measure { border-top: 1px double #222; }
+.dock-col .measure + .measure { border-top: 3px double #222; }
 
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {
