@@ -526,11 +526,29 @@ body {
   box-sizing: border-box;
   background: #fffef7;
   flex: 0 0 auto;
-  border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 (single) */
+  border-right: 3px double #222;       /* 列区切り = 小節線と同じ 3px double */
   position: relative;
 }
-/* 列ごとの区切り = single 1px, 外枠 = double。これは「単 × 二重」交差なので
-   管状処理は不要(管状化は二重線同士の交差にのみ適用)。よって擬似要素は無し。 */
+/* 列区切り(3px double) × 外枠(3px double) = 二重 × 二重交差 → 管状処理を適用。
+   right:0 で自身の border-right に揃えるので、外枠の角には掛からない。 */
+.dock-col::before,
+.dock-col::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  width: 3px;             /* 列区切りの幅と同じ */
+  height: 1px;
+  background: #fffef7;
+  z-index: 5;
+  pointer-events: none;
+}
+.dock-col::before { top: -1px; }
+.dock-col::after  { bottom: -1px; }
+/* 列区切りが無い列(=外枠の右端に接する列・空列)では擬似要素も出さない */
+.dock-area-inner > .dock-col:first-child::before,
+.dock-area-inner > .dock-col:first-child::after,
+.dock-col.empty::before,
+.dock-col.empty::after { display: none; }
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 /* rightmost column of an area butts against the area frame — no own separator */
