@@ -402,8 +402,8 @@ body {
   cursor: pointer;
 }
 
-/* Tuning-change marker on a measure column */
-.measure.tuning-change { border-right: 4px double #b8761a; }
+/* Tuning-change marker on a measure column (太さは通常の小節線と同じ 3px) */
+.measure.tuning-change { border-right: 3px double #b8761a; }
 .tuning-badge {
   writing-mode: vertical-rl;
   font-size: 0.55em;
