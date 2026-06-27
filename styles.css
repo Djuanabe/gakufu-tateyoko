@@ -116,14 +116,15 @@ body {
 /* 小節ごとの区切り線: 二重線 */
 /* 小節線: 拍線(1px)と同じ太さの線を2本(=3px double → 1px/1px隙間/1px) */
 .measure + .measure { border-right: 3px double #222; }
-/* 外枠の内側横線が小節区切り線の位置で交差して見えるのを防ぎ、
-   交差点を管状(=線が継続して見える)に見せる。
-   小節セパレータ(幅3px)と同じ幅の塗りで、外枠の内側横線(Y=2/底-1)だけを消す。 */
+/* 外枠の内側横線を、小節区切り線(border-right)の位置だけ塗り潰して管状に。
+   位置は要素自身の border-right に揃える(right:0) — こうすると擬似要素は
+   常に小節と小節の境界に来るので、外枠の角(角=外枠どうしの交差)には掛か
+   らず、角の二重線交差は自然に描画される。 */
 .measure + .measure::before,
 .measure + .measure::after {
   content: '';
   position: absolute;
-  left: -3px;             /* = 直前の小節の border-right の左端 */
+  right: 0;               /* = 自身の border-right の外端に揃える */
   width: 3px;             /* 小節区切り線の幅 */
   height: 1px;
   background: #fffef7;    /* 譜面紙の色で塗り潰して内側横線を消す */
@@ -527,28 +528,30 @@ body {
   border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
   position: relative;
 }
-/* 外枠の内側横線が列区切り線で交差して見えるのを防ぐ。
-   1px(通常) または 3px(block-start) 幅の塗りで内側横線だけ消す。 */
-.dock-col + .dock-col::before,
-.dock-col + .dock-col::after {
+/* 外枠の内側横線を、列区切り線(自身の border-right)の位置だけ塗り潰して管状に。
+   right:0 で自身の border-right に揃えるので、外枠の角(=外枠どうしの交差)
+   には掛からず、角の二重線交差はそのまま描画される。 */
+.dock-col::before,
+.dock-col::after {
   content: '';
   position: absolute;
-  left: -1px;
+  right: 0;
   width: 1px;
   height: 1px;
   background: #fffef7;
   z-index: 5;
   pointer-events: none;
 }
-.dock-col + .dock-col::before { top: -1px; }
-.dock-col + .dock-col::after  { bottom: -1px; }
-.dock-col.block-start + .dock-col::before,
-.dock-col.block-start + .dock-col::after {
-  left: -3px;
-  width: 3px;
-}
-.dock-col.empty + .dock-col::before,
-.dock-col.empty + .dock-col::after { display: none; }
+.dock-col::before { top: -1px; }
+.dock-col::after  { bottom: -1px; }
+.dock-col.block-start::before,
+.dock-col.block-start::after { width: 3px; }
+/* 列区切り線が無い列(=外枠の右端に接する列・空列)では擬似要素も出さない */
+.dock-area-inner > .dock-col:first-child::before,
+.dock-area-inner > .dock-col:first-child::after,
+.dock-col.empty::before,
+.dock-col.empty::after { display: none; }
+.dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 /* rightmost column of an area butts against the area frame — no own separator */
 .dock-area-inner > .dock-col:first-child { border-right: none; }
