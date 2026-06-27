@@ -82,17 +82,20 @@ function buildDrawingSvg(d) {
   };
 
   if (d.type === 'repeat') {
-    // ひらがなの「く」を縦に伸ばした繰り返し記号(くの字点)。長さ=半拍単位。
-    // 右上 → 左中央の頂点 → 右下 の角ばった筆ストローク。
-    const xr = w - 3, xl = 3, mY = L / 2;
-    const p = document.createElementNS(DRAW_NS, 'path');
-    p.setAttribute('d', `M ${xr} 1 L ${xl} ${mY.toFixed(1)} L ${xr} ${L - 1}`);
-    p.setAttribute('fill', 'none');
-    p.setAttribute('stroke', INK);
-    p.setAttribute('stroke-width', '2.6');
-    p.setAttribute('stroke-linecap', 'round');
-    p.setAttribute('stroke-linejoin', 'round');
-    svg.appendChild(p);
+    // 繰り返し記号: 実際のひらがな「く」を Yuji Syuku で描画し、SVG の
+    // preserveAspectRatio:none で縦方向に伸ばして「くの字点」にする。
+    // (字形そのものを加工するので、和文フォントのテイストが保たれる。)
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    const t = document.createElementNS(DRAW_NS, 'text');
+    t.setAttribute('x', '12');
+    t.setAttribute('y', '20');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-family', '"Yuji Syuku","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif');
+    t.setAttribute('font-size', '24');
+    t.setAttribute('fill', INK);
+    t.textContent = 'く';
+    svg.appendChild(t);
   } else if (d.type === 'wave') {
     fillPath(brushWavePath(L, mid, d.orient));
   } else if (d.type === 'arrow') {
