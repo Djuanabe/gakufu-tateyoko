@@ -527,7 +527,7 @@ body {
   content: '';
   position: absolute;
   right: 0;
-  width: 3px;             /* 列区切りの幅と同じ */
+  width: 1px;             /* 列区切りの幅と同じ */
   height: 1px;
   background: #fffef7;
   z-index: 5;
