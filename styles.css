@@ -517,7 +517,7 @@ body {
   box-sizing: border-box;
   background: #fffef7;
   flex: 0 0 auto;
-  border-right: 3px solid #222;       /* 列区切り = 小節線と同じ 3px double */
+  border-right: 1px solid #222;       /* 列区切り = 小節線と同じ 3px double */
   position: relative;
 }
 /* 列区切り(3px double) × 外枠(3px double) = 二重 × 二重交差 → 管状処理を適用。
