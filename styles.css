@@ -89,7 +89,7 @@ body {
   display: flex;
   flex-direction: row-reverse;
   gap: 0;
-  border: 3px double #222;   /* 外枠の二重線(=拍線と同じ太さの線×2) */
+  border: 1px solid #222;   /* 外枠の二重線(=拍線と同じ太さの線×2) */
   background: #fffef7;
   align-self: start;
   position: relative;   /* positioning context for the drawing overlay */
@@ -103,7 +103,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  border-right: 1px solid #aaa;
+  border-right: 1px solid #222;
 }
 .measure:first-child { border-right: none; }
 /* 編集画面: 各小節カラム上部に小さく小節番号 */
@@ -111,28 +111,19 @@ body {
   position: absolute; top: 0; left: 0; z-index: 6;
   font-size: 10px; line-height: 1; color: #888;
   background: rgba(255,254,247,0.85);
-  padding: 1px 2px; pointer-events: none;
+  padding: 1px 2px; border-right: none;
 }
 /* 小節ごとの区切り線: 二重線 */
 /* 小節線: 拍線(1px)と同じ太さの線を2本(=3px double → 1px/1px隙間/1px) */
-.measure + .measure { border-right: 3px double #222; }
+.measure + .measure { border-right: 1px solid #222; }
 /* 外枠の内側横線を、小節区切り線(border-right)の位置だけ塗り潰して管状に。
    位置は要素自身の border-right に揃える(right:0) — こうすると擬似要素は
    常に小節と小節の境界に来るので、外枠の角(角=外枠どうしの交差)には掛か
    らず、角の二重線交差は自然に描画される。 */
 .measure + .measure::before,
 .measure + .measure::after {
-  content: '';
-  position: absolute;
-  right: 0;               /* = 自身の border-right の外端に揃える */
-  width: 3px;             /* 小節区切り線の幅 */
-  height: 1px;
-  background: #fffef7;    /* 譜面紙の色で塗り潰して内側横線を消す */
-  z-index: 5;
-  pointer-events: none;
+ display: none;
 }
-.measure + .measure::before { top: -1px; }    /* 上側の内側横線を消す */
-.measure + .measure::after  { bottom: -1px; } /* 下側の内側横線を消す */
 
 .cell {
   flex: 0 0 auto;
