@@ -516,41 +516,21 @@ body {
   gap: 0;                              /* 列同士は隣接 */
 }
 /* One column = a fixed-size 16-beat block, so blank/partial columns stay
-   aligned with the others. */
+   aligned with the others. Height is tuned so a full 4/4 column (4 measures
+   × 8 eighths × OUT_H8 + 3 measure separators × 3px) fits exactly with no
+   wasted bottom space. */
 .dock-col {
   display: flex; flex-direction: column;
   width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
-  height: 820px;                       /* 16 beats + 小節区切り */
+  height: 809px;                       /* 4*(8*25)=800 + 3*3 (小節線) = 809 */
   box-sizing: border-box;
-  /* overflow: visible で外枠との交差用擬似要素が外に出られる */
   background: #fffef7;
   flex: 0 0 auto;
-  border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
+  border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 (single) */
   position: relative;
 }
-/* 外枠の内側横線を、列区切り線(自身の border-right)の位置だけ塗り潰して管状に。
-   right:0 で自身の border-right に揃えるので、外枠の角(=外枠どうしの交差)
-   には掛からず、角の二重線交差はそのまま描画される。 */
-.dock-col::before,
-.dock-col::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  width: 1px;
-  height: 1px;
-  background: #fffef7;
-  z-index: 5;
-  pointer-events: none;
-}
-.dock-col::before { top: -1px; }
-.dock-col::after  { bottom: -1px; }
-.dock-col.block-start::before,
-.dock-col.block-start::after { width: 3px; }
-/* 列区切り線が無い列(=外枠の右端に接する列・空列)では擬似要素も出さない */
-.dock-area-inner > .dock-col:first-child::before,
-.dock-area-inner > .dock-col:first-child::after,
-.dock-col.empty::before,
-.dock-col.empty::after { display: none; }
+/* 列ごとの区切り = single 1px, 外枠 = double。これは「単 × 二重」交差なので
+   管状処理は不要(管状化は二重線同士の交差にのみ適用)。よって擬似要素は無し。 */
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 /* rightmost column of an area butts against the area frame — no own separator */
