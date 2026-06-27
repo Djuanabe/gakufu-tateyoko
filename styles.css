@@ -1,10 +1,14 @@
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS Mincho", serif;
   background: #f6f4ee;
   color: #222;
 }
+
 .topbar {
   background: #2d2a26;
   color: #f4ecd8;
@@ -12,19 +16,37 @@ body {
   display: flex;
   align-items: center;
   gap: 0.8em;
-  flex-wrap: nowrap;          /* keep the header on one line */
-  overflow-x: auto;           /* scroll horizontally if it doesn't fit */
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
-.topbar h1 { font-size: 1.1em; margin: 0; white-space: nowrap; }
-.controls { display: flex; gap: 0.4em; align-items: center; flex-wrap: nowrap; font-size: 0.85em; white-space: nowrap; }
-.controls button, .controls select, .controls input {
-  background: #f4ecd8; color: #222; border: 1px solid #555; padding: 0.2em 0.5em; border-radius: 3px;
+
+.topbar h1 {
+  font-size: 1.1em;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  flex-wrap: nowrap;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.controls button,
+.controls select,
+.controls input {
+  background: #f4ecd8;
+  color: #222;
+  border: 1px solid #555;
+  padding: 0.2em 0.5em;
+  border-radius: 3px;
 }
 
 .workspace {
   display: grid;
-  /* minmax(0,1fr): keep the editor column within the available width so the
-     score scrolls INSIDE its fixed viewport instead of widening the page. */
   grid-template-columns: 400px minmax(0, 1fr);
   gap: 0.5em;
   padding: 0.5em;
@@ -41,10 +63,33 @@ body {
   max-height: calc(100vh - 80px);
   overflow-y: auto;
 }
-.staff-panel h2 { font-size: 1em; margin: 0 0 0.4em; }
-.staff-controls { display: flex; gap: 0.6em; font-size: 0.85em; margin-bottom: 0.3em; }
-#staff-svg, #tuning-staff-svg { width: 100%; height: auto; background: #fffef7; border: 1px solid #ddd; }
-.hint { font-size: 0.75em; color: #555; line-height: 1.4; margin-top: 0.4em; }
+
+.staff-panel h2 {
+  font-size: 1em;
+  margin: 0 0 0.4em;
+}
+
+.staff-controls {
+  display: flex;
+  gap: 0.6em;
+  font-size: 0.85em;
+  margin-bottom: 0.3em;
+}
+
+#staff-svg,
+#tuning-staff-svg {
+  width: 100%;
+  height: auto;
+  background: #fffef7;
+  border: 1px solid #ddd;
+}
+
+.hint {
+  font-size: 0.75em;
+  color: #555;
+  line-height: 1.4;
+  margin-top: 0.4em;
+}
 
 .editor-panel {
   background: #fff;
@@ -54,12 +99,14 @@ body {
   flex-direction: column;
   gap: 0.5em;
 }
+
 .cell-input-row {
   display: flex;
   gap: 0.4em;
   align-items: center;
   font-size: 0.9em;
 }
+
 #cell-input {
   flex: 1;
   font-family: inherit;
@@ -73,8 +120,6 @@ body {
   background: #fffef7;
   padding: 0.6em;
   border: 1px solid #ccc;
-  /* Fixed-size viewport: the window itself does NOT resize with the browser;
-     navigate the score by scrolling inside it (both axes). */
   width: 100%;
   height: 480px;
   overflow-x: auto;
@@ -84,50 +129,59 @@ body {
   align-items: flex-start;
 }
 
-/* Each "system" is one horizontal row of music (measures right-to-left). */
+/* =========================================================
+   編集画面
+   すべて細い一重線
+   ========================================================= */
+
 .system {
   display: flex;
   flex-direction: row-reverse;
   gap: 0;
-  border: 1px solid #222;   /* 外枠の二重線(=拍線と同じ太さの線×2) */
+  border: 1px solid #222;
   background: #fffef7;
   align-self: start;
-  position: relative;   /* positioning context for the drawing overlay */
+  position: relative;
 }
 
-/* One measure = one vertical column. */
 .measure {
-  /* One beat = 2 eighths = 2×46 = 92px tall. For a 縦2 : 横3 beat box,
-     the column width = 1.5 × 92 = 138px (a horizontally-long rectangle). */
   width: 138px;
   display: flex;
   flex-direction: column;
   position: relative;
   border-right: 1px solid #222;
 }
-.measure:first-child { border-right: none; }
-/* 編集画面: 各小節カラム上部に小さく小節番号 */
-.measure-num {
-  position: absolute; top: 0; left: 0; z-index: 6;
-  font-size: 10px; line-height: 1; color: #888;
-  background: rgba(255,254,247,0.85);
-  padding: 1px 2px; border-right: none;
+
+.measure:first-child {
+  border-right: none;
 }
-/* 小節ごとの区切り線: 二重線 */
-/* 小節線: 拍線(1px)と同じ太さの線を2本(=3px double → 1px/1px隙間/1px) */
-.measure + .measure { border-right: 1px solid #222; }
-/* 外枠の内側横線を、小節区切り線(border-right)の位置だけ塗り潰して管状に。
-   位置は要素自身の border-right に揃える(right:0) — こうすると擬似要素は
-   常に小節と小節の境界に来るので、外枠の角(角=外枠どうしの交差)には掛か
-   らず、角の二重線交差は自然に描画される。 */
+
+.measure + .measure {
+  border-right: 1px solid #222;
+}
+
+/* 編集画面では二重線用の管状処理は使わない */
 .measure + .measure::before,
 .measure + .measure::after {
- display: none;
+  display: none;
+}
+
+.measure-num {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  font-size: 10px;
+  line-height: 1;
+  color: #888;
+  background: rgba(255,254,247,0.85);
+  padding: 1px 2px;
+  pointer-events: none;
 }
 
 .cell {
   flex: 0 0 auto;
-  height: 40px;            /* default; overridden inline per 8th/16th */
+  height: 40px;
   position: relative;
   cursor: pointer;
   padding: 1px;
@@ -139,10 +193,16 @@ body {
   line-height: 1.0;
   overflow: hidden;
 }
-.cell.active { background: #ffe7a8; outline: 2px solid #c98a14; }
-.cell.unconverted { background: #ffe1e1; }
 
-/* Chords are laid out HORIZONTALLY (notes side by side). */
+.cell.active {
+  background: #ffe7a8;
+  outline: 2px solid #c98a14;
+}
+
+.cell.unconverted {
+  background: #ffe1e1;
+}
+
 .cell .stack {
   display: flex;
   flex-direction: row;
@@ -151,60 +211,54 @@ body {
   gap: 0;
   width: 100%;
 }
-/* tighten the spacing between adjacent chord note names (only when neither
-   side is a circled note — circled rows manage their own spacing). */
-.cell .stack.chord .note-row:not(.circled) + .note-row:not(.circled) { margin-left: -0.12em; }
-/* one note = [mark][kanji]; the ヲ/オ mark is an in-flow SIZED character to the
-   LEFT of the kanji (its width counts in the layout, like the note name). */
+
+.cell .stack.chord .note-row:not(.circled) + .note-row:not(.circled) {
+  margin-left: -0.12em;
+}
+
 .cell .note-row {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .cell .note-row .left-mark {
   flex: 0 0 auto;
-  font-size: 1em;       /* same height as the note name */
+  font-size: 1em;
   color: #333;
   line-height: 1;
   white-space: nowrap;
-  /* Squeeze horizontally and anchor to the right edge so the visual ink ends
-     flush at the box's right edge (against its own kanji). Then pull the
-     entire box left with a big negative margin to remove the empty space on
-     the left side. Tiny negative margin-right covers the kanji's own left
-     bearing. */
   display: inline-block;
   transform: scaleX(0.6);
   transform-origin: right center;
   margin-left: -0.42em;
   margin-right: -0.08em;
 }
+
 .cell .note-row .kanji {
   flex: 0 0 auto;
   display: inline-block;
   min-width: 1em;
   text-align: center;
 }
-/* 十七絃の算用数字(10〜17など2桁)は桁同士を詰めて1文字幅に近づける */
+
 .cell .note-row .kanji.multichar {
   min-width: 0;
   letter-spacing: -0.18em;
-  margin-right: 0.18em; /* compensate trailing letter-spacing so it stays centred */
+  margin-right: 0.18em;
 }
-/* Empty placeholder used when a row has only a ヲ/オ mark — keeps the same
-   width as a kanji so the mark sits at the same left-of-center spot. */
+
 .cell .note-row .kanji-spacer {
   flex: 0 0 auto;
   display: inline-block;
   width: 1em;
 }
-/* The ヲ/オ mark no longer takes layout width (it's absolutely positioned),
-   so the kanji stays dead-centered with or without a mark. */
 
-/* Literal text / katakana placed in the center column like a string number. */
-.cell .note-row .kanji.center-text { font-size: 0.85em; }
+.cell .note-row .kanji.center-text {
+  font-size: 0.85em;
+}
 
-/* Left-side annotations (katakana/text after a separator), like ヲ/オ. */
 .cell .cell-left {
   position: absolute;
   left: 1px;
@@ -217,12 +271,12 @@ body {
   line-height: 1;
   color: #333;
 }
+
 .cell .cell-left span {
   display: inline-block;
-  transform: scaleY(1.7) scaleX(0.7); /* 縦長 */
+  transform: scaleY(1.7) scaleX(0.7);
 }
 
-/* Shift入力で音名を○で囲む（和音はまとめて1つの○） */
 .cell .stack.circled {
   border: 1.5px solid #333;
   border-radius: 50%;
@@ -230,11 +284,10 @@ body {
   min-width: 1.5em;
   box-sizing: border-box;
 }
-/* 単独音・オ/ヲ付きの単独音は正円で囲む（縦横を揃える）。
-   音名はセル高いっぱいだが、囲み円は半拍の高さに収まるよう少し小さくする。 */
+
 .cell .stack.single.circled {
-  width: auto;            /* shrink to the glyph (don't fill the cell width) */
-  font-size: 0.66em;      /* so the enclosing circle fits the half-beat height */
+  width: auto;
+  font-size: 0.66em;
   aspect-ratio: 1 / 1;
   padding: 0.08em;
   min-width: 1.4em;
@@ -243,23 +296,20 @@ body {
   align-items: center;
   justify-content: center;
 }
-/* 大文字入力 = この音のみを個別に正円で囲む（和音内で混在可、左に並ぶ）。
-   親 stack の scaleX が掛かるため和音では縦長の楕円になります(音数が多いほど)。
-   layout は正方形なので隣の音とは重なりません。 */
+
 .cell .note-row.circled {
   border: 1.5px solid #333;
   border-radius: 50%;
   font-size: 0.7em;
-  width: 1.3em;       /* 固定サイズの正方形にして円形を担保 */
+  width: 1.3em;
   height: 1.3em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin: 0 0.05em;
-  flex: 0 0 auto;     /* 押しつぶされないように */
+  flex: 0 0 auto;
 }
-/* 大文字入力が2つ以上ある場合は、それらをまとめて一つの○で囲む
-   (Shift+Enter で和音全体を囲んだときと同じ見た目)。 */
+
 .cell .stack.chord .circle-group {
   display: inline-flex;
   flex-direction: row;
@@ -270,16 +320,27 @@ body {
   margin: 0 0.05em;
   flex: 0 0 auto;
 }
-/* 内部のnote-row同士は通常の和音と同様に少し詰める */
-.cell .stack.chord .circle-group .note-row + .note-row { margin-left: -0.12em; }
-.cell .sustain { font-size: 1.1em; }
+
+.cell .stack.chord .circle-group .note-row + .note-row {
+  margin-left: -0.12em;
+}
+
+.cell .sustain {
+  font-size: 1.1em;
+}
+
 .cell .sustain.tri-dot {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.cell .sustain.tri-dot .tri { font-size: 1.2em; line-height: 1; }
+
+.cell .sustain.tri-dot .tri {
+  font-size: 1.2em;
+  line-height: 1;
+}
+
 .cell .sustain.tri-dot .dot {
   position: absolute;
   left: 50%;
@@ -287,12 +348,22 @@ body {
   transform: translate(-50%, -50%);
   font-size: 0.45em;
 }
-.cell .rest { font-size: 1em; color: #333; }
-.cell .unknown { color: #c0392b; font-size: 0.7em; }
 
-/* Beat divider: full-width thin black line (same thinness as the half-beat). */
-.cell.beat-end { border-bottom: 1px solid #222; }
-/* Eighth divider (half-beat): short black line, 1/4 of the frame width, flush left. */
+.cell .rest {
+  font-size: 1em;
+  color: #333;
+}
+
+.cell .unknown {
+  color: #c0392b;
+  font-size: 0.7em;
+}
+
+/* 拍線・半拍線も細い一重線 */
+.cell.beat-end {
+  border-bottom: 1px solid #222;
+}
+
 .cell.eighth-end::after {
   content: '';
   position: absolute;
@@ -303,13 +374,12 @@ body {
   background: #222;
 }
 
-/* Tuplet block: occupies its full beats; bottom is a beat line. */
+/* 連符 */
 .tuplet-block {
   position: relative;
   border-bottom: 1px solid #222;
 }
-/* Short tick where the tuplet crosses an internal beat boundary (does not
-   reach across the note names). */
+
 .tuplet-beat-tick {
   position: absolute;
   left: 0;
@@ -319,8 +389,6 @@ body {
   pointer-events: none;
 }
 
-/* Tuplet bracket: slur-like curve on the right of the grouped cells. */
-.measure { /* ensure positioning context (already relative) */ }
 .tuplet-bracket {
   position: absolute;
   right: 0;
@@ -328,6 +396,7 @@ body {
   pointer-events: none;
   z-index: 5;
 }
+
 .tuplet-num {
   position: absolute;
   right: 0;
@@ -338,7 +407,8 @@ body {
   padding: 0 1px;
 }
 
-.tuplet-row, .draw-row {
+.tuplet-row,
+.draw-row {
   display: flex;
   gap: 0.4em;
   align-items: center;
@@ -347,23 +417,27 @@ body {
   flex-wrap: wrap;
 }
 
-/* Drawing overlay (lines / waves / arrows) on top of the score system. */
+/* Drawing overlay */
 .draw-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: none;  /* only the drawings themselves are interactive */
+  pointer-events: none;
   z-index: 8;
 }
+
 .drawing {
   position: absolute;
   pointer-events: auto;
   cursor: move;
 }
-.drawing.selected { outline: 1px dashed #c98a14; }
-/* Free-form text annotation: ASCII letters are italic (romaji style). */
+
+.drawing.selected {
+  outline: 1px dashed #c98a14;
+}
+
 .drawing.drawing-text {
   font-family: "Yuji Syuku", "Yu Mincho", "Hiragino Mincho ProN", serif;
-  font-size: 16px;          /* don't inherit em from the score; stay readable */
+  font-size: 16px;
   line-height: 1.2;
   color: #222;
   padding: 2px 4px;
@@ -372,20 +446,37 @@ body {
   min-width: 1em;
   min-height: 1em;
 }
-.drawing.drawing-text i { font-style: italic; }
-/* 縦書き: ローマ字もそのまま回転(横倒し)させる */
+
+.drawing.drawing-text i {
+  font-style: italic;
+}
+
 .drawing.drawing-text.vertical {
   writing-mode: vertical-rl;
   text-orientation: mixed;
   white-space: nowrap;
 }
+
 .text-row {
-  display: flex; gap: 0.4em; align-items: center; font-size: 0.9em; flex-wrap: wrap;
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  font-size: 0.9em;
+  flex-wrap: wrap;
 }
-#text-input { flex: 1; min-width: 12em; padding: 0.25em 0.4em; border: 1px solid #888; border-radius: 3px; }
+
+#text-input {
+  flex: 1;
+  min-width: 12em;
+  padding: 0.25em 0.4em;
+  border: 1px solid #888;
+  border-radius: 3px;
+}
+
 .draw-handle {
   position: absolute;
-  width: 9px; height: 9px;
+  width: 9px;
+  height: 9px;
   background: #c98a14;
   border: 1px solid #7a5400;
   border-radius: 50%;
@@ -393,8 +484,11 @@ body {
   cursor: pointer;
 }
 
-/* Tuning-change marker on a measure column (太さは通常の小節線と同じ 3px) */
-.measure.tuning-change { border-right: 3px double #b8761a; }
+/* 調弦変更線も編集画面では細い一重線 */
+.measure.tuning-change {
+  border-right: 1px solid #b8761a;
+}
+
 .tuning-badge {
   writing-mode: vertical-rl;
   font-size: 0.55em;
@@ -413,165 +507,509 @@ body {
   margin: 0.5em 0;
   font-size: 0.9em;
 }
-.tuning-sections button { padding: 0.2em 0.6em; }
 
-.modal {
-  position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: flex-end;
-  z-index: 100;
-  pointer-events: none;             /* let clicks reach the staff behind it */
+.tuning-sections button {
+  padding: 0.2em 0.6em;
 }
-.modal.hidden { display: none; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.modal.hidden {
+  display: none;
+}
+
 .modal-content {
   background: #fff;
   padding: 1.2em;
   border-radius: 6px;
-  max-width: 70vw; max-height: 94vh;
+  max-width: 70vw;
+  max-height: 94vh;
   overflow: auto;
   min-width: 460px;
   margin-right: 1vw;
   box-shadow: 0 0 0 2px #888, 0 8px 30px rgba(0,0,0,0.4);
-  pointer-events: auto;            /* the panel itself stays interactive */
+  pointer-events: auto;
 }
+
 .tuning-staff-pick {
-  display: flex; gap: 0.4em; align-items: center; flex-wrap: wrap;
-  margin: 0.5em 0; font-size: 0.9em;
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0.5em 0;
+  font-size: 0.9em;
 }
-#tuning-staff-count { color: #444; }
-#tuning-table { border-collapse: collapse; margin-top: 0.8em; }
-#tuning-table th, #tuning-table td { border: 1px solid #999; padding: 0.3em 0.5em; text-align: center; }
-#tuning-table input { width: 5em; font-family: inherit; }
-.modal-actions { margin-top: 1em; display: flex; gap: 0.4em; justify-content: flex-end; }
 
-.staff-note { fill: #222; pointer-events: none; }
-.staff-note.hover { fill: #c98a14; }
-.staff-note.sel { fill: #c0392b; stroke: #c0392b; stroke-width: 3; }
-.staff-hit { cursor: pointer; }
-.staff-hit:hover { fill: rgba(201,138,20,0.12); }
+#tuning-staff-count {
+  color: #444;
+}
 
-/* ===== Save library / ensemble docking / PDF export ===== */
-.export-content { min-width: 520px; max-width: 80vw; }
-.export-sec { margin: 0.8em 0; padding-top: 0.6em; border-top: 1px solid #ddd; }
-.export-sec h3 { margin: 0 0 0.4em; font-size: 1em; }
-.lib-row { display: flex; gap: 0.5em; align-items: center; flex-wrap: wrap; }
-#save-name { flex: 1; min-width: 12em; padding: 0.3em 0.4em; border: 1px solid #888; border-radius: 3px; }
+#tuning-table {
+  border-collapse: collapse;
+  margin-top: 0.8em;
+}
 
-.lib-list { list-style: none; margin: 0; padding: 0; max-height: 30vh; overflow-y: auto; }
-.lib-list li { display: flex; align-items: center; gap: 0.5em; padding: 0.25em 0; border-bottom: 1px dotted #ccc; }
-.lib-list .lib-name { flex: 1; }
-.lib-list .lib-empty { color: #888; border: none; }
+#tuning-table th,
+#tuning-table td {
+  border: 1px solid #999;
+  padding: 0.3em 0.5em;
+  text-align: center;
+}
 
-.dock-select { display: flex; flex-direction: column; gap: 0.2em; margin: 0.4em 0; max-height: 26vh; overflow-y: auto; }
-.dock-item { display: flex; align-items: center; gap: 0.5em; padding: 0.15em 0; }
-.dock-item .dock-roman { margin-left: auto; font-weight: bold; color: #c98a14; }
+#tuning-table input {
+  width: 5em;
+  font-family: inherit;
+}
+
+.modal-actions {
+  margin-top: 1em;
+  display: flex;
+  gap: 0.4em;
+  justify-content: flex-end;
+}
+
+.staff-note {
+  fill: #222;
+  pointer-events: none;
+}
+
+.staff-note.hover {
+  fill: #c98a14;
+}
+
+.staff-note.sel {
+  fill: #c0392b;
+  stroke: #c0392b;
+  stroke-width: 3;
+}
+
+.staff-hit {
+  cursor: pointer;
+}
+
+.staff-hit:hover {
+  fill: rgba(201,138,20,0.12);
+}
+
+/* =========================================================
+   Save library / ensemble docking / PDF export
+   ========================================================= */
+
+.export-content {
+  min-width: 520px;
+  max-width: 80vw;
+}
+
+.export-sec {
+  margin: 0.8em 0;
+  padding-top: 0.6em;
+  border-top: 1px solid #ddd;
+}
+
+.export-sec h3 {
+  margin: 0 0 0.4em;
+  font-size: 1em;
+}
+
+.lib-row {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#save-name {
+  flex: 1;
+  min-width: 12em;
+  padding: 0.3em 0.4em;
+  border: 1px solid #888;
+  border-radius: 3px;
+}
+
+.lib-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.lib-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.25em 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+.lib-list .lib-name {
+  flex: 1;
+}
+
+.lib-list .lib-empty {
+  color: #888;
+  border: none;
+}
+
+.dock-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  margin: 0.4em 0;
+  max-height: 26vh;
+  overflow-y: auto;
+}
+
+.dock-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.15em 0;
+}
+
+.dock-item .dock-roman {
+  margin-left: auto;
+  font-weight: bold;
+  color: #c98a14;
+}
 
 /* Preview overlay */
 .dock-preview-shell {
-  background: #fff; border-radius: 6px; box-shadow: 0 0 0 2px #888, 0 8px 30px rgba(0,0,0,0.4);
-  width: 92vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden;
-  pointer-events: auto;   /* .modal sets pointer-events:none; re-enable here */
-}
-.dock-preview-bar {
-  display: flex; align-items: center; gap: 0.8em; padding: 0.5em 0.8em;
-  background: #2d2a26; color: #f4ecd8;
-}
-.dock-preview-bar span { margin-right: auto; }
-/* The preview area holds one or more B4-landscape PAGES stacked vertically. */
-.dock-preview {
-  flex: 1; overflow: auto; padding: 16px; background: #777;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px #888, 0 8px 30px rgba(0,0,0,0.4);
+  width: 92vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
 }
 
-/* One output page = B4 landscape; the framed blocks are centred with margins. */
+.dock-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.5em 0.8em;
+  background: #2d2a26;
+  color: #f4ecd8;
+}
+
+.dock-preview-bar span {
+  margin-right: auto;
+}
+
+.dock-preview {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: #777;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* =========================================================
+   ドッキング出力
+   B4横向き。
+   参考画像の縦長枠を横に2つ並べる。
+   ========================================================= */
+
 .dock-page {
-  width: 1300px; height: 920px;     /* B4 landscape ratio ≈ 364:257 */
+  width: 1300px;
+  height: 920px;
   background: #fffef7;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  display: flex; flex-direction: row; flex-wrap: nowrap;
-  align-items: center; justify-content: center;
-  gap: 28px;
+
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+
+  gap: 56px;
   padding: 18px;
   box-sizing: border-box;
   flex: 0 0 auto;
 }
-/* Each area = the OUTER FRAME (one of the two boxes per page), double line.
-   It hugs its 8-column block tightly (no padding). */
+
+/* 縦長枠1つ */
 .dock-area {
   display: inline-flex;
-  border: 3px double #222;             /* 外枠の二重線(=拍線と同じ太さの線×2) */
+  position: relative;
+  border: 3px double #222;
+  background: #fffef7;
+  box-sizing: border-box;
+}
+
+/* 重奏時のみ、枠外上部の線 */
+.dock-area::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  height: 2px;
+  background: #222;
+  pointer-events: none;
+}
+
+/* 独奏時は枠外上部線なし */
+.dock-area[data-ensemble="1"]::before {
+  display: none;
+}
+
+.dock-area-inner {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 0;
   background: #fffef7;
 }
-.dock-area-inner {
-  display: flex; flex-direction: row-reverse;  /* columns read right-to-left */
-  align-items: flex-start;
-  gap: 0;                              /* 列同士は隣接 */
-}
-/* One column = a fixed-size 16-beat block, so blank/partial columns stay
-   aligned with the others. Height is tuned so a full 4/4 column (4 measures
-   × 8 eighths × OUT_H8 + 3 measure separators × 3px) fits exactly with no
-   wasted bottom space. */
+
+/* 出力の1列 */
 .dock-col {
-  display: flex; flex-direction: column;
-  width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
-  height: 809px;                       /* 4*(8*25)=800 + 3*3 (小節線) = 809 */
+  display: flex;
+  flex-direction: column;
+  width: 75px;
+  height: 809px;
   box-sizing: border-box;
   background: #fffef7;
   flex: 0 0 auto;
-  border-right: 3px double #222;       /* 列区切り = 小節線と同じ 3px double */
   position: relative;
+
+  /* 通常は細い一重線 */
+  border-right: 1px solid #222;
 }
-/* 列区切り(3px double) × 外枠(3px double) = 二重 × 二重交差 → 管状処理を適用。
-   right:0 で自身の border-right に揃えるので、外枠の角には掛からない。 */
+
+/* 右端列は外枠に接するので線なし */
+.dock-area-inner > .dock-col:first-child {
+  border-right: none;
+}
+
+/* 空列 */
+.dock-col.empty {
+  border-right: none !important;
+  background: transparent;
+}
+
+.dock-col.empty::before,
+.dock-col.empty::after {
+  display: none;
+}
+
+/* 出力内の小節 */
+.dock-col .measure {
+  width: 100%;
+  border-right: none;
+}
+
+/* 出力の小節区切りは二重線 */
+.dock-col .measure + .measure {
+  border-top: 3px double #222;
+  border-right: none;
+}
+
+/* 出力では、編集画面用の疑似要素を使わない */
+.dock-col .measure + .measure::before,
+.dock-col .measure + .measure::after {
+  display: none;
+}
+
+/* 出力の拍線 */
+.dock-col .cell.beat-end {
+  border-bottom: 1px solid #222;
+}
+
+/* 出力の半拍線 */
+.dock-col .cell.eighth-end::after {
+  height: 1px;
+  background: #222;
+}
+
+/* 出力の連符 */
+.dock-col .tuplet-block {
+  border-bottom: 1px solid #222;
+}
+
+.dock-col .tuplet-beat-tick {
+  border-top: 1px solid #222;
+}
+
+/* =========================================================
+   重奏数ごとの太線
+   二重奏なら2列ごと、三重奏なら3列ごと。
+   data-ensemble は export.js で付与する。
+   ========================================================= */
+
+/* 独奏：すべて細線、太線なし */
+.dock-area-inner[data-ensemble="1"] > .dock-col {
+  border-right: 1px solid #222;
+}
+
+.dock-area-inner[data-ensemble="1"] > .dock-col:first-child,
+.dock-area-inner[data-ensemble="1"] > .dock-col.empty {
+  border-right: none !important;
+}
+
+/* 二重奏：2列ごとに太線 */
+.dock-area-inner[data-ensemble="2"] > .dock-col:nth-child(2n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 三重奏：3列ごとに太線 */
+.dock-area-inner[data-ensemble="3"] > .dock-col:nth-child(3n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 四重奏：4列ごとに太線 */
+.dock-area-inner[data-ensemble="4"] > .dock-col:nth-child(4n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 五重奏 */
+.dock-area-inner[data-ensemble="5"] > .dock-col:nth-child(5n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 六重奏 */
+.dock-area-inner[data-ensemble="6"] > .dock-col:nth-child(6n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 七重奏 */
+.dock-area-inner[data-ensemble="7"] > .dock-col:nth-child(7n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* 八重奏 */
+.dock-area-inner[data-ensemble="8"] > .dock-col:nth-child(8n + 1):not(:first-child):not(.empty) {
+  border-right: 3px solid #222;
+}
+
+/* block-start が export.js 側に残っている場合の保険 */
+.dock-area-inner:not([data-ensemble="1"]) > .dock-col.block-start {
+  border-right: 3px solid #222;
+}
+
+/* ただし右端列・空列は常に線なし */
+.dock-area-inner > .dock-col:first-child,
+.dock-area-inner > .dock-col.empty {
+  border-right: none !important;
+}
+
+/* =========================================================
+   外枠との交差をきれいに見せる処理
+   ========================================================= */
+
 .dock-col::before,
 .dock-col::after {
-  content: '';
+  content: "";
   position: absolute;
   right: 0;
-  width: 3px;             /* 列区切りの幅と同じ */
+  width: 3px;
   height: 1px;
   background: #fffef7;
   z-index: 5;
   pointer-events: none;
 }
-.dock-col::before { top: -1px; }
-.dock-col::after  { bottom: -1px; }
-/* 列区切りが無い列(=外枠の右端に接する列・空列)では擬似要素も出さない */
+
+.dock-col::before {
+  top: -1px;
+}
+
+.dock-col::after {
+  bottom: -1px;
+}
+
 .dock-area-inner > .dock-col:first-child::before,
 .dock-area-inner > .dock-col:first-child::after,
 .dock-col.empty::before,
-.dock-col.empty::after { display: none; }
-.dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
-.dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
-/* rightmost column of an area butts against the area frame — no own separator */
-.dock-area-inner > .dock-col:first-child { border-right: none; }
-/* blank slots carry no divider line */
-.dock-col.empty { border-right: none; }
-/* n重奏: n列ごと(ブロック境界)の区切りは太線 */
-.dock-col.block-start { border-right: 3px solid #222; }
-.dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
-.dock-col .measure { border-right: none; width: 100%; }
-/* 小節ごとの区切りは二重線（縦に積むので上罫） */
-/* 小節線: 拍線(1px)と同じ太さの線を2本 */
-.dock-col .measure + .measure { border-top: 3px double #222; }
+.dock-col.empty::after {
+  display: none;
+}
 
-/* Print → PDF: B4 landscape, show only the pages */
+/* =========================================================
+   Print → PDF
+   B4 landscape
+   ========================================================= */
+
 @media print {
-  @page { size: B4 landscape; margin: 0; }
-  /* the half-beat divider is a background rectangle; force it (and any other
-     shaded element) to actually print instead of being dropped. */
-  #dock-preview-overlay, #dock-preview-overlay * {
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  @page {
+    size: B4 landscape;
+    margin: 0;
   }
-  body.printing > *:not(#dock-preview-overlay) { display: none !important; }
-  #dock-preview-overlay { position: static; background: none; display: block; }
-  #dock-preview-overlay .dock-preview-bar { display: none; }
-  .dock-preview-shell { width: auto; height: auto; box-shadow: none; }
-  .dock-preview { display: block; overflow: visible; height: auto; padding: 0; gap: 0; background: #fff; }
-  /* Match the physical B4 page exactly so the browser does NOT scale the
-     content (scaling rounds away 1px column separators in the PDF). */
+
+  #dock-preview-overlay,
+  #dock-preview-overlay * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.printing > *:not(#dock-preview-overlay) {
+    display: none !important;
+  }
+
+  #dock-preview-overlay {
+    position: static;
+    background: none;
+    display: block;
+  }
+
+  #dock-preview-overlay .dock-preview-bar {
+    display: none;
+  }
+
+  .dock-preview-shell {
+    width: auto;
+    height: auto;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .dock-preview {
+    display: block;
+    overflow: visible;
+    height: auto;
+    padding: 0;
+    gap: 0;
+    background: #fff;
+  }
+
   .dock-page {
-    width: 364mm; height: 257mm; box-shadow: none; margin: 0;
-    page-break-after: always; break-after: page;
+    width: 364mm;
+    height: 257mm;
+    box-shadow: none;
+    margin: 0;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+
+    gap: 16mm;
+    padding: 0;
+
+    page-break-after: always;
+    break-after: page;
   }
-  .dock-page:last-child { page-break-after: auto; break-after: auto; }
+
+  .dock-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  .dock-area {
+    box-shadow: none;
+  }
 }
