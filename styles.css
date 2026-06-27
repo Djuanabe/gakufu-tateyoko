@@ -521,11 +521,35 @@ body {
   width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
   height: 820px;                       /* 16 beats + 小節区切り */
   box-sizing: border-box;
-  overflow: hidden;
+  /* overflow: visible で外枠との交差用擬似要素が外に出られる */
   background: #fffef7;
   flex: 0 0 auto;
   border-right: 1px solid #222;        /* 列ごとの区切り = 一重線 */
+  position: relative;
 }
+/* 外枠の内側横線が列区切り線で交差して見えるのを防ぐ。
+   1px(通常) または 3px(block-start) 幅の塗りで内側横線だけ消す。 */
+.dock-col + .dock-col::before,
+.dock-col + .dock-col::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  width: 1px;
+  height: 1px;
+  background: #fffef7;
+  z-index: 5;
+  pointer-events: none;
+}
+.dock-col + .dock-col::before { top: -1px; }
+.dock-col + .dock-col::after  { bottom: -1px; }
+.dock-col.block-start + .dock-col::before,
+.dock-col.block-start + .dock-col::after {
+  left: -3px;
+  width: 3px;
+}
+.dock-col.empty + .dock-col::before,
+.dock-col.empty + .dock-col::after { display: none; }
+.dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 /* rightmost column of an area butts against the area frame — no own separator */
 .dock-area-inner > .dock-col:first-child { border-right: none; }
 /* blank slots carry no divider line */
