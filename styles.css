@@ -553,6 +553,10 @@ body {
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
 .dock-col .measure + .measure { border-top: 3px double #222; }
 
+/* 出力上の描画は編集ハンドル非表示・非インタラクティブ */
+.dock-col .drawing { pointer-events: none; cursor: default; }
+.dock-col .draw-handle { display: none; }
+
 /* Print → PDF: B4 landscape, show only the pages */
 @media print {
   @page { size: B4 landscape; margin: 0; }

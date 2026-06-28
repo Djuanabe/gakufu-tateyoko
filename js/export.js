@@ -197,6 +197,9 @@ function renderDockedInto(container, entries) {
 
   const multiPart = entries.length > 1;
   const columns = [];
+  // entry -> Map<measureIdx, .measure element> — used to anchor drawings into
+  // the same measure they sat over in the editor.
+  const measureElsByEntry = new Map();
   blocks.forEach(measureIdxs => {
     entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');
@@ -210,16 +213,62 @@ function renderDockedInto(container, entries) {
           if (k < lo || k > hi) return;
           const m = entry.sheet.parts[0].measures[k];
           if (m) {
-            col.appendChild(buildMeasureColumn(m, k, {
+            const mEl = buildMeasureColumn(m, k, {
               instrumentType: entry.sheet.instrumentType,
               tunings: entry.sheet.tunings,
               h8: OUT_H8,
-            }));
+            });
+            col.appendChild(mEl);
+            if (!measureElsByEntry.has(entry)) measureElsByEntry.set(entry, new Map());
+            measureElsByEntry.get(entry).set(k, mEl);
           }
         });
       }
       if (!col.firstChild) col.classList.add('empty');
       columns.push(col);
+    });
+  });
+
+  // Drawings: anchor each drawing to the measure it sits over in the editor
+  // (the editor system is laid out row-reverse with 138px-wide measures), then
+  // place a scaled copy inside the corresponding output measure. Editor and
+  // output share the same horizontal:vertical scale (75/138 == 25/46), so a
+  // single SCALE works for x, y, and length.
+  const EDITOR_H8 = 46;
+  const EDITOR_MEASURE_W = 138;
+  const SCALE = OUT_H8 / EDITOR_H8;
+  entries.forEach(entry => {
+    const drawings = entry.sheet.drawings || [];
+    if (drawings.length === 0) return;
+    const measureEls = measureElsByEntry.get(entry);
+    if (!measureEls) return;
+    const numMeasures = entry.sheet.parts[0].measures.length;
+    if (numMeasures === 0) return;
+    const sysW = numMeasures * EDITOR_MEASURE_W;
+
+    drawings.forEach((d, idx) => {
+      const fromRight = Math.max(0, sysW - (d.x || 0));
+      let mIdx = Math.floor(fromRight / EDITOR_MEASURE_W);
+      if (mIdx < 0) mIdx = 0;
+      if (mIdx >= numMeasures) mIdx = numMeasures - 1;
+      const mEl = measureEls.get(mIdx);
+      if (!mEl) return; // anchored measure not rendered (outside content range)
+
+      const measureLeft = sysW - (mIdx + 1) * EDITOR_MEASURE_W;
+      const localX = (d.x || 0) - measureLeft;
+      const localY = (d.y || 0);
+
+      const scaledD = Object.assign({}, d, {
+        x: Math.round(localX * SCALE),
+        y: Math.round(localY * SCALE),
+      });
+      if (typeof d.length === 'number') {
+        scaledD.length = Math.max(10, Math.round(d.length * SCALE));
+      }
+
+      if (typeof makeDrawingEl === 'function') {
+        mEl.appendChild(makeDrawingEl(scaledD, idx));
+      }
     });
   });
 
