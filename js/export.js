@@ -197,6 +197,7 @@ function renderDockedInto(container, entries) {
 
   const multiPart = entries.length > 1;
   const columns = [];
+  const firstContentColByEntry = new Map();
   blocks.forEach(measureIdxs => {
     entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');
@@ -217,10 +218,38 @@ function renderDockedInto(container, entries) {
             }));
           }
         });
+        if (!firstContentColByEntry.has(entry)) firstContentColByEntry.set(entry, col);
       }
       if (!col.firstChild) col.classList.add('empty');
       columns.push(col);
     });
+  });
+
+  // Drawings overlay: render each entry's drawings (line / wave / arrow /
+  // repeat / text) onto its first content column, scaled from editor
+  // dimensions to output dimensions so things sit inside the frame. The
+  // dock-area has overflow:hidden, so anything that would still stray past
+  // the outer frame is clipped — drawings never leak outside the page.
+  const EDITOR_H8 = 46;
+  const SCALE = OUT_H8 / EDITOR_H8;
+  firstContentColByEntry.forEach((col, entry) => {
+    const drawings = entry.sheet.drawings || [];
+    if (drawings.length === 0) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'draw-overlay dock-draw-overlay';
+    drawings.forEach((d, idx) => {
+      const scaled = Object.assign({}, d, {
+        x: Math.round((d.x || 0) * SCALE),
+        y: Math.round((d.y || 0) * SCALE),
+      });
+      if (typeof d.length === 'number') {
+        scaled.length = Math.max(10, Math.round(d.length * SCALE));
+      }
+      if (typeof makeDrawingEl === 'function') {
+        overlay.appendChild(makeDrawingEl(scaled, idx));
+      }
+    });
+    col.appendChild(overlay);
   });
 
   // Fixed grid: every page always shows two areas of 8 same-size columns.
