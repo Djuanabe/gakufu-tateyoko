@@ -105,9 +105,8 @@ function buildMeasureColumn(m, mIdx, opts) {
       continue;
     }
 
-    // ---- Empty-beat merging (PDF出力): a whole beat with no content
-    // becomes ONE cell (top + bottom borders + half-beat dash inside) so each
-    // beat shows as a 4-sided box matching the reference layout. ----
+    // ---- PDF出力: 空拍は描画しない(透明スペーサのみ) — 拍があるところだけが
+    // 4方囲まれた箱として表示され、空白部は外枠だけが見える状態になる。 ----
     if (mergeEmptyBeats && i % perBeat === 0) {
       let allEmpty = true;
       for (let k = 0; k < perBeat && i + k < cells.length; k++) {
@@ -117,13 +116,10 @@ function buildMeasureColumn(m, mIdx, opts) {
       }
       if (allEmpty) {
         const span = Math.min(perBeat, cells.length - i);
-        const a = renderCell(cells[i], type);
-        sizeCell(a, span * h16);
-        a.classList.add('beat-empty');
-        const isLastBeatOfMeasure = (i + span >= cells.length);
-        if (!isLastBeatOfMeasure) a.classList.add('beat-end');
-        a.dataset.measure = mIdx; a.dataset.cell = i;
-        mEl.appendChild(a);
+        const spacer = document.createElement('div');
+        spacer.className = 'beat-spacer';
+        spacer.style.height = (span * h16) + 'px';
+        mEl.appendChild(spacer);
         i += span;
         continue;
       }
@@ -138,6 +134,17 @@ function buildMeasureColumn(m, mIdx, opts) {
     const isLastInMeasure = (i + 2 >= cells.length);
     const beatEndClass = endsBeat && !isLastInMeasure ? 'beat-end'
                         : (endsBeat ? '' : 'eighth-end');
+
+    // PDF出力: 空ペアは透明スペーサで(セル枠線を出さない)
+    const cellHasAny = cellHasContent(cell) || cursorHere(i);
+    if (!subdivided && !cellHasAny && mergeEmptyBeats) {
+      const sp = document.createElement('div');
+      sp.className = 'beat-spacer';
+      sp.style.height = h8 + 'px';
+      mEl.appendChild(sp);
+      i += 2;
+      continue;
+    }
 
     if (subdivided) {
       const a = renderCell(cell, type);

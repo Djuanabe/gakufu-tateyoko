@@ -192,6 +192,9 @@ function renderDockedInto(container, entries) {
   if (blk.length) blocks.push(blk);
 
   // Build one column per (block, instrument) in reading order.
+  const measureHasAnyContent = (m) => m && m.cells.some(c =>
+    (c.notes && c.notes.length) || c.rest || c.sustain || c.unconverted || c.iter || c.tuplet);
+
   const multiPart = entries.length > 1;
   const columns = [];
   blocks.forEach(measureIdxs => {
@@ -203,7 +206,7 @@ function renderDockedInto(container, entries) {
       if (multiPart && instIdx === 0) col.classList.add('block-start');
       measureIdxs.forEach(k => {
         const m = entry.sheet.parts[0].measures[k];
-        if (m) {
+        if (m && measureHasAnyContent(m)) {
           col.appendChild(buildMeasureColumn(m, k, {
             instrumentType: entry.sheet.instrumentType,
             tunings: entry.sheet.tunings,
@@ -212,26 +215,18 @@ function renderDockedInto(container, entries) {
           }));
         }
       });
+      // a column with no content measures: mark as empty so it shows only the frame
+      if (!col.firstChild) col.classList.add('empty');
       columns.push(col);
     });
   });
 
   // Fixed grid: every page always shows two areas of 8 same-size columns.
-  // Blank slots are padded with empty columns so the 16拍×8列 layout stays
-  // aligned. Empty columns are filled with 4 empty 4/4 measures so each
-  // beat-cell is still drawn as a 4-sided box matching the rest of the page.
+  // Empty columns keep the column box (= part of the outer frame's interior)
+  // visible but contain NO beat-cells — they read as truly blank columns.
   const emptyCol = () => {
     const c = document.createElement('div');
     c.className = 'dock-col empty';
-    for (let k = 0; k < 4; k++) {
-      const m = newMeasure(4, 4);
-      c.appendChild(buildMeasureColumn(m, k, {
-        instrumentType: '13',
-        tunings: [],
-        h8: OUT_H8,
-        mergeEmptyBeats: true,
-      }));
-    }
     return c;
   };
   const mkArea = cols => {
