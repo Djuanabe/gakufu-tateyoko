@@ -360,15 +360,42 @@ function renderCell(cell, instrumentType) {
     // Build one note-row (mark + kanji) for note `n`. The .circled class
     // marks this row as needing an individual ring; when multiple notes share
     // a ring they're wrapped in a .circle-group instead (no per-row class).
-    const buildNoteRow = (n, asCircled) => {
-      const row = document.createElement('div');
-      row.className = 'note-row' + (asCircled ? ' circled' : '');
-      if (n.leftMark) {
-        const lm = document.createElement('span');
-        lm.className = 'left-mark';
-        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
-        row.appendChild(lm);
-      }
+const buildNoteRow = (n, asCircled) => {
+  const row = document.createElement('div');
+  row.className = 'note-row' + (asCircled ? ' circled' : '');
+
+  if (n.leftMark) {
+    const lm = document.createElement('span');
+    lm.className = 'left-mark';
+    lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
+    row.appendChild(lm);
+  }
+
+  if (n.stringIndex >= 0) {
+    const label = document.createElement('span');
+    label.className = 'kanji';
+
+    const rawLbl = stringLabel(instrumentType, n.stringIndex) || '?';
+    const displayLbl = displayStringNameForScore(rawLbl, instrumentType);
+
+    label.textContent = displayLbl;
+
+    // 変換後の表示文字で multichar 判定する
+    // 10 → 十 なので multichar にはならない
+    // 11 → 1 なので multichar にはならない
+    if (displayLbl.length > 1) {
+      label.classList.add('multichar');
+    }
+
+    row.appendChild(label);
+  } else {
+    const spacer = document.createElement('span');
+    spacer.className = 'kanji-spacer';
+    row.appendChild(spacer);
+  }
+
+  return row;
+};
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
         label.className = 'kanji';
