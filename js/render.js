@@ -105,46 +105,10 @@ function buildMeasureColumn(m, mIdx, opts) {
       continue;
     }
 
-    // ---- PDF出力: 空拍は描画しない(透明スペーサのみ) — 拍があるところだけが
-    // 4方囲まれた箱として表示され、空白部は外枠だけが見える状態になる。 ----
-    if (mergeEmptyBeats && i % perBeat === 0) {
-      let allEmpty = true;
-      for (let k = 0; k < perBeat && i + k < cells.length; k++) {
-        if (cellHasContent(cells[i + k]) || cursorHere(i + k) || cells[i + k].tuplet) {
-          allEmpty = false; break;
-        }
-      }
-      if (allEmpty) {
-        const span = Math.min(perBeat, cells.length - i);
-        const spacer = document.createElement('div');
-        spacer.className = 'beat-spacer';
-        spacer.style.height = (span * h16) + 'px';
-        mEl.appendChild(spacer);
-        i += span;
-        continue;
-      }
-    }
-
     // ---- Normal eighth pair (cells i, i+1) ----
     const next = cells[i + 1];
     const subdivided = cellHasContent(next) || cursorHere(i + 1);
     const endsBeat = ((i + 2) % perBeat === 0);
-    // last cell of the measure: the measure separator below provides the
-    // bottom border, so don't add a beat-end (avoids a doubled line).
-    const isLastInMeasure = (i + 2 >= cells.length);
-    const beatEndClass = endsBeat && !isLastInMeasure ? 'beat-end'
-                        : (endsBeat ? '' : 'eighth-end');
-
-    // PDF出力: 空ペアは透明スペーサで(セル枠線を出さない)
-    const cellHasAny = cellHasContent(cell) || cursorHere(i);
-    if (!subdivided && !cellHasAny && mergeEmptyBeats) {
-      const sp = document.createElement('div');
-      sp.className = 'beat-spacer';
-      sp.style.height = h8 + 'px';
-      mEl.appendChild(sp);
-      i += 2;
-      continue;
-    }
 
     if (subdivided) {
       const a = renderCell(cell, type);
@@ -156,14 +120,14 @@ function buildMeasureColumn(m, mIdx, opts) {
       const b = renderCell(next || newCell(), type);
       sizeCell(b, h16);
       b.dataset.measure = mIdx; b.dataset.cell = i + 1;
-      if (beatEndClass) b.classList.add(beatEndClass);
+      b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
       if (cursorHere(i + 1)) b.classList.add('active');
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
       sizeCell(a, h8);
       a.dataset.measure = mIdx; a.dataset.cell = i;
-      if (beatEndClass) a.classList.add(beatEndClass);
+      a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
       if (cursorHere(i)) a.classList.add('active');
       mEl.appendChild(a);
     }
