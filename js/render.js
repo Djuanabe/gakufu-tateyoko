@@ -34,6 +34,26 @@ function cellHasContent(c) {
   return !!(c && ((c.notes && c.notes.length > 0) || c.rest || c.sustain || c.unconverted));
 }
 
+function displayStringNameForScore(value, instrumentType) {
+  const s = String(value);
+
+  // 十七絃のみ表示を変える
+  if (String(instrumentType) === '17') {
+    const n = Number(s);
+
+    // 10 は漢字の「十」
+    if (n === 10) {
+      return '十';
+    }
+
+    // 11〜17 は 10 を引いて 1〜7 表記
+    if (Number.isInteger(n) && n >= 11 && n <= 17) {
+      return String(n - 10);
+    }
+  }
+
+  return s;
+}
 // Build one measure as a vertical column element (reused by the editor and the
 // docked PDF preview). opts:
 //   instrumentType : string used for the string labels
