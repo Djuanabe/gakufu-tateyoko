@@ -325,6 +325,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Backspace' && input.value === '') {
       // empty box: step back / delete instead of editing text
       e.preventDefault();
+      // 描画 (繰り返し記号など) が選択されていれば優先して削除する
+      if (selectedDrawingIdx >= 0) {
+        History.push();
+        State.removeDrawing(selectedDrawingIdx);
+        selectedDrawingIdx = -1;
+        refresh();
+        return;
+      }
       handleBackspace();
       return;
     }
