@@ -545,10 +545,9 @@ body {
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
 /* rightmost column of an area butts against the area frame — no own separator */
 .dock-area-inner > .dock-col:first-child { border-right: none; }
-/* blank slots carry no divider line */
-.dock-col.empty { border-right: none; }
-/* n重奏: n列ごと(ブロック境界)の区切りは太線 */
-.dock-col.block-start { border-right: 3px solid #222; }
+/* blank slots carry no divider line — block-start 込みでも空列なら描かない */
+.dock-col.empty,
+.dock-col.empty.block-start { border-right: none; }
 .dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col .measure { border-right: none; width: 100%; }
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
