@@ -530,7 +530,8 @@ body {
 .dock-col {
   display: flex; flex-direction: column;
   width: 75px;                         /* 3 × OUT_H8 (2:3 beat box) */
-  height: 812px;                       /* 4*(8*25)=800 + 3*3 (小節線) + 3 (列内最終小節の下罫) = 812 */
+  height: 809px;                       /* 4*(8*25)=800 + 3*3 (小節線) = 809。
+                                          列を埋めた時は外枠下罫を共有する */
   box-sizing: border-box;
   background: #fffef7;
   flex: 0 0 auto;
@@ -554,9 +555,15 @@ body {
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
 .dock-col .measure + .measure { border-top: 3px double #222; }
 /* 列内の最後の小節は、下に小節がなく区切り線が描かれないので
-   自分の下罫として 3px double を持つ。列高 (812px) はこの分を
-   込みで決めてあるのでオーバーフローしない。 */
+   自分の下罫として 3px double を持つ。ただし内容が列を埋め切って
+   外枠下罫と接する場合 (.last-touches-frame) は、外枠と共有する
+   ために自分の下罫は描かない (上端と同じ扱い)。 */
 .dock-col .measure:last-child { border-bottom: 3px double #222; }
+.dock-col.last-touches-frame .measure:last-child { border-bottom: none; }
+
+/* 内容のない area はレイアウト位置は確保しつつ非表示にして、
+   残った area が本来の位置 (読み始めの右側) に留まるように */
+.dock-area.empty-area { visibility: hidden; }
 
 /* 出力上の描画は編集ハンドル非表示・非インタラクティブ */
 .dock-col .drawing { pointer-events: none; cursor: default; }
@@ -581,8 +588,12 @@ body {
   /* Match the physical B4 page exactly so the browser does NOT scale the
      content (scaling rounds away 1px column separators in the PDF). */
   .dock-page {
-    width: 364mm; height: 257mm; box-shadow: none; margin: 0;
-    overflow: hidden;                /* 余白の端数で次ページに溢れさせない */
+    /* @page と完全に同サイズになるようビューポート単位で指定。
+       mm 指定とブラウザの丸めズレで終端が次ページに溢れて白紙ページが
+       追加されるのを避ける。 */
+    width: 100vw; height: 100vh;
+    box-shadow: none; margin: 0;
+    overflow: hidden;
   }
   /* ページ間にだけ改ページを入れる。最終ページの後ろに余分な改ページを
      付けないことで、白紙ページが追加されるのを防ぐ。 */

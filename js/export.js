@@ -200,6 +200,9 @@ function renderDockedInto(container, entries) {
   // entry -> Map<measureIdx, .measure element> — used to anchor drawings into
   // the same measure they sat over in the editor.
   const measureElsByEntry = new Map();
+  // Column inner height needed to decide whether content fills column up to
+  // the outer frame. Must match .dock-col height in CSS.
+  const COL_INNER_H = 809;
   blocks.forEach(measureIdxs => {
     entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');
@@ -207,6 +210,8 @@ function renderDockedInto(container, entries) {
       if (multiPart && instIdx === 0) col.classList.add('block-start');
 
       const contentIdxs = measureIdxs.filter(k => measureHasAnyContent(entry.sheet.parts[0].measures[k]));
+      let renderedH = 0;
+      let renderedCount = 0;
       if (contentIdxs.length > 0) {
         const lo = contentIdxs[0], hi = contentIdxs[contentIdxs.length - 1];
         measureIdxs.forEach(k => {
@@ -221,8 +226,17 @@ function renderDockedInto(container, entries) {
             col.appendChild(mEl);
             if (!measureElsByEntry.has(entry)) measureElsByEntry.set(entry, new Map());
             measureElsByEntry.get(entry).set(k, mEl);
+            renderedH += m.cells.length * OUT_H8;
+            renderedCount++;
           }
         });
+        // 3px separators only sit BETWEEN measures (border-top on .measure +
+        // .measure). The last measure's own bottom border (if any) is the
+        // condition we want to check, so don't include it here.
+        renderedH += Math.max(0, renderedCount - 1) * 3;
+        // Content reaches column bottom → share the outer frame's bottom line
+        // instead of drawing a separate measure border-bottom.
+        if (renderedH >= COL_INNER_H) col.classList.add('last-touches-frame');
       }
       if (!col.firstChild) col.classList.add('empty');
       columns.push(col);
@@ -280,12 +294,14 @@ function renderDockedInto(container, entries) {
     c.className = 'dock-col empty';
     return c;
   };
-  // Areas with no content at all (e.g., the left/2nd-read area on the only
-  // page of a short score) are skipped so the surviving area is centered by
-  // the page's justify-content: center — left/right symmetric output.
+  // Areas without any content are still placed (so the surviving area keeps
+  // its read-order position) but visually hidden via .empty-area.
   const mkArea = cols => {
-    if (!cols.some(c => c && !c.classList.contains('empty'))) return null;
-    const area = document.createElement('div'); area.className = 'dock-area';
+    const area = document.createElement('div');
+    area.className = 'dock-area';
+    if (!cols.some(c => c && !c.classList.contains('empty'))) {
+      area.classList.add('empty-area');
+    }
     const inner = document.createElement('div'); inner.className = 'dock-area-inner';
     for (let i = 0; i < COLS_PER_AREA; i++) inner.appendChild(cols[i] || emptyCol());
     area.appendChild(inner);
@@ -294,13 +310,14 @@ function renderDockedInto(container, entries) {
   const pages = Math.max(1, Math.ceil(columns.length / COLS_PER_PAGE));
   for (let pg = 0; pg < pages; pg++) {
     const pageCols = columns.slice(pg * COLS_PER_PAGE, (pg + 1) * COLS_PER_PAGE);
+    // Skip pages where neither half has content (e.g., extra block after the
+    // score ended — would otherwise become a fully blank page in PDF).
+    if (!pageCols.some(c => c && !c.classList.contains('empty'))) continue;
     const page = document.createElement('div');
     page.className = 'dock-page';
-    const leftArea = mkArea(pageCols.slice(COLS_PER_AREA));    // visually left (read 2nd)
-    const rightArea = mkArea(pageCols.slice(0, COLS_PER_AREA)); // visually right (read 1st)
-    if (leftArea) page.appendChild(leftArea);
-    if (rightArea) page.appendChild(rightArea);
-    if (page.firstChild) container.appendChild(page);
+    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));    // visually left (read 2nd)
+    page.appendChild(mkArea(pageCols.slice(0, COLS_PER_AREA))); // visually right (read 1st)
+    container.appendChild(page);
   }
 
   if (typeof drawTupletBrackets === 'function') drawTupletBrackets(container);
