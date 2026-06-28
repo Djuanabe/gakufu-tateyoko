@@ -253,6 +253,19 @@ function renderDockedInto(container, entries) {
       columns[i].classList.add('block-end');
     }
   }
+  // 視覚的に右隣 (DOM-prev) が空列となる内容列は、自分の border-left では
+  // 視覚的な右辺の罫線を描けないので、border-right を出して右辺を囲む。
+  // ただし area の先頭 (DOM 先頭 = 視覚的に最右) は外枠と接するので不要。
+  for (let i = 0; i < columns.length; i++) {
+    const col = columns[i];
+    if (col.classList.contains('empty')) continue;
+    if (i === 0) continue;
+    const sameArea = Math.floor((i - 1) / COLS_PER_AREA) === Math.floor(i / COLS_PER_AREA);
+    if (!sameArea) continue;
+    if (columns[i - 1].classList.contains('empty')) {
+      col.classList.add('right-edge-needed');
+    }
+  }
 
   // Drawings: anchor each drawing to the measure it sits over in the editor
   // (the editor system is laid out row-reverse with 138px-wide measures), then
