@@ -14,39 +14,63 @@
  */
 
 const REST_GLYPH = { quarter: '○', eighth: '△' };
-const LEFT_MARK_GLYPH = { 'wo': 'ヲ', 'o': 'オ' };
+const LEFT_MARK_GLYPH = { wo: 'ヲ', o: 'オ' };
 
 // Display sizes. Data is stored as sixteenth cells, but a sixteenth is only
 // shown at half size where it's actually used (via Space); otherwise an
 // eighth (= 2 sixteenths) is drawn at full size.
-const H8 = 46;        // eighth-note cell height (px) — shrunk so a measure fits the viewport
-const H16 = H8 / 2;   // sixteenth-note cell height (px)
-// Note glyphs fill their cell vertically: a half-beat (eighth) note is exactly
-// H8 tall. Font-size ≈ cell height (CJK glyphs fill close to the em box).
+const H8 = 46;
+const H16 = H8 / 2;
+
+// Note glyphs fill their cell vertically.
 const FONT_FILL = 0.98;
 
 function sizeCell(el, h) {
   el.style.height = h + 'px';
-  el.style.fontSize = (h * FONT_FILL) + 'px';
+  el.style.fontSize = h * FONT_FILL + 'px';
 }
 
 function cellHasContent(c) {
-  return !!(c && ((c.notes && c.notes.length > 0) || c.rest || c.sustain || c.unconverted));
+  return !!(
+    c &&
+    (
+      (c.notes && c.notes.length > 0) ||
+      c.rest ||
+      c.sustain ||
+      c.unconverted
+    )
+  );
 }
 
+/*
+ * 十七絃の表示変換。
+ *
+ * 内部データは stringLabel() の結果をそのまま使い、
+ * 譜面上の表示だけ変える。
+ *
+ * 十七絃:
+ *   10 → 十
+ *   11 → 1
+ *   12 → 2
+ *   13 → 3
+ *   14 → 4
+ *   15 → 5
+ *   16 → 6
+ *   17 → 7
+ *
+ * 十三絃:
+ *   変更なし
+ */
 function displayStringNameForScore(value, instrumentType) {
   const s = String(value);
 
-  // 十七絃のみ表示を変える
   if (String(instrumentType) === '17') {
     const n = Number(s);
 
-    // 10 は漢字の「十」
     if (n === 10) {
       return '十';
     }
 
-    // 11〜17 は 10 を引いて 1〜7 表記
     if (Number.isInteger(n) && n >= 11 && n <= 17) {
       return String(n - 10);
     }
@@ -54,32 +78,37 @@ function displayStringNameForScore(value, instrumentType) {
 
   return s;
 }
-// Build one measure as a vertical column element (reused by the editor and the
-// docked PDF preview). opts:
+
+// Build one measure as a vertical column element.
+// opts:
 //   instrumentType : string used for the string labels
-//   tunings        : tuning sections (for the 調弦変更 badge)
-//   isCursorCell   : (cellIdx) => bool  (editor cursor; omit for read-only)
+//   tunings        : tuning sections
+//   isCursorCell   : (cellIdx) => bool
 function buildMeasureColumn(m, mIdx, opts) {
   const type = opts.instrumentType;
   const tunings = opts.tunings;
   const cursorHere = opts.isCursorCell || (() => false);
-  const h8 = opts.h8 || H8;          // override for shrunk PDF output
+  const h8 = opts.h8 || H8;
   const h16 = h8 / 2;
-  const mergeEmptyBeats = !!opts.mergeEmptyBeats; // 出力: 空拍を1セルで表示
 
   const mEl = document.createElement('div');
   mEl.className = 'measure';
   mEl.dataset.measure = mIdx;
-  if (opts.h8) mEl.style.width = (3 * h8) + 'px'; // keep the 2:3 beat box
+
+  // PDF出力などで h8 が指定された場合、縦2:横3の比率を維持
+  if (opts.h8) {
+    mEl.style.width = 3 * h8 + 'px';
+  }
 
   const ts = m.timeSignature;
-  const perBeat = Math.max(1, Math.round(16 / ts.den));        // sixteenth cells per beat (4/4 -> 4)
-  const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2)); // 4/4 -> 2
+  const perBeat = Math.max(1, Math.round(16 / ts.den));
+  const eighthsPerBeat = Math.max(1, Math.round(perBeat / 2));
   const beatH = eighthsPerBeat * h8;
 
-  // mark a tuning change that begins at this measure
+  // 調弦変更の印
   if (tunings && tunings.some(t => t.fromMeasure === mIdx && mIdx > 0)) {
     mEl.classList.add('tuning-change');
+
     const badge = document.createElement('div');
     badge.className = 'tuning-badge';
     badge.textContent = '調弦変更';
@@ -88,15 +117,17 @@ function buildMeasureColumn(m, mIdx, opts) {
 
   const cells = m.cells;
   let i = 0;
+
   while (i < cells.length) {
     const cell = cells[i];
 
-    // ---- Tuplet block (redistributed over its beats) ----
+    // ---- Tuplet block ----
     if (cell.tuplet && cell.tuplet.pos === 0) {
       const t = cell.tuplet;
       const span = t.span;
       const blockH = t.beats * beatH;
       const slotH = blockH / t.n;
+
       const block = document.createElement('div');
       block.className = 'tuplet-block';
       block.style.height = blockH + 'px';
@@ -104,61 +135,87 @@ function buildMeasureColumn(m, mIdx, opts) {
       for (let s = 0; s < t.n; s++) {
         const idx = i + s;
         const cEl = renderCell(cells[idx], type);
+
         sizeCell(cEl, slotH);
+
         cEl.classList.add('tuplet');
         cEl.dataset.measure = mIdx;
         cEl.dataset.cell = idx;
         cEl.dataset.tupletId = t.id;
         cEl.dataset.tupletN = t.n;
-        if (cursorHere(idx)) cEl.classList.add('active');
+
+        if (cursorHere(idx)) {
+          cEl.classList.add('active');
+        }
+
         block.appendChild(cEl);
       }
-      // short ticks where the tuplet crosses an internal beat boundary
+
+      // 連符が拍境界をまたぐ位置に短い線を入れる
       for (let b = 1; b < t.beats; b++) {
         const tick = document.createElement('div');
         tick.className = 'tuplet-beat-tick';
-        tick.style.top = (b * beatH) + 'px';
+        tick.style.top = b * beatH + 'px';
         block.appendChild(tick);
       }
+
       mEl.appendChild(block);
       i += span;
       continue;
     }
 
-    // ---- Normal eighth pair (cells i, i+1) ----
+    // ---- Normal eighth pair ----
     const next = cells[i + 1];
     const subdivided = cellHasContent(next) || cursorHere(i + 1);
-    const endsBeat = ((i + 2) % perBeat === 0);
+    const endsBeat = (i + 2) % perBeat === 0;
 
     if (subdivided) {
       const a = renderCell(cell, type);
       sizeCell(a, h16);
-      a.dataset.measure = mIdx; a.dataset.cell = i;
-      if (cursorHere(i)) a.classList.add('active');
-      mEl.appendChild(a); // no divider line under the first sixteenth
+      a.dataset.measure = mIdx;
+      a.dataset.cell = i;
+
+      if (cursorHere(i)) {
+        a.classList.add('active');
+      }
+
+      mEl.appendChild(a);
 
       const b = renderCell(next || newCell(), type);
       sizeCell(b, h16);
-      b.dataset.measure = mIdx; b.dataset.cell = i + 1;
+      b.dataset.measure = mIdx;
+      b.dataset.cell = i + 1;
       b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
-      if (cursorHere(i + 1)) b.classList.add('active');
+
+      if (cursorHere(i + 1)) {
+        b.classList.add('active');
+      }
+
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
       sizeCell(a, h8);
-      a.dataset.measure = mIdx; a.dataset.cell = i;
+      a.dataset.measure = mIdx;
+      a.dataset.cell = i;
       a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
-      if (cursorHere(i)) a.classList.add('active');
+
+      if (cursorHere(i)) {
+        a.classList.add('active');
+      }
+
       mEl.appendChild(a);
     }
+
     i += 2;
   }
+
   return mEl;
 }
 
 function renderScore(state) {
   const root = document.getElementById('score');
   root.innerHTML = '';
+
   const sheet = state.sheet;
   const measures = sheet.parts[0].measures;
 
@@ -170,55 +227,67 @@ function renderScore(state) {
     const mEl = buildMeasureColumn(m, mIdx, {
       instrumentType: sheet.instrumentType,
       tunings: sheet.tunings,
-      isCursorCell: (idx) => state.cursor.measure === mIdx && state.cursor.cell === idx
+      isCursorCell: idx =>
+        state.cursor.measure === mIdx && state.cursor.cell === idx
     });
-    // measure number (editor only) at the top of each column
+
+    // 編集画面だけ小節番号を表示
     const num = document.createElement('div');
     num.className = 'measure-num';
     num.textContent = mIdx + 1;
     mEl.appendChild(num);
+
     sys.appendChild(mEl);
   });
 
-  // Draw tuplet brackets (needs the cells laid out in the DOM for offsets).
   drawTupletBrackets(root);
 
-  // Overlay free-form drawings (lines / waves / arrows).
-  if (typeof renderDrawings === 'function') renderDrawings(sys, state);
+  if (typeof renderDrawings === 'function') {
+    renderDrawings(sys, state);
+  }
 
-  // attach click handlers for cell selection
+  // セルクリックでカーソル移動
   root.querySelectorAll('.cell').forEach(el => {
     el.addEventListener('click', () => {
       const mIdx = parseInt(el.dataset.measure, 10);
       const cIdx = parseInt(el.dataset.cell, 10);
+
       State.setCursor(mIdx, cIdx, 0);
       renderScore(State);
+
       const inp = document.getElementById('cell-input');
       inp.focus();
       inp.value = '';
     });
   });
 
-  // Keep the cursor cell scrolled into view inside the fixed-size viewport.
+  // カーソルセルを表示範囲内に保つ
   const active = root.querySelector('.cell.active');
+
   if (active) {
     const r = active.getBoundingClientRect();
     const sr = root.getBoundingClientRect();
+
     if (r.left < sr.left || r.right > sr.right) {
       const measureEl = active.closest('.measure');
+
       if (measureEl) {
-        const offset = measureEl.offsetLeft - (root.clientWidth / 2 - measureEl.clientWidth / 2);
+        const offset =
+          measureEl.offsetLeft -
+          (root.clientWidth / 2 - measureEl.clientWidth / 2);
+
         root.scrollLeft = offset;
       }
     }
-    // vertical: keep the active cell within the viewport height
+
     if (r.top < sr.top || r.bottom > sr.bottom) {
-      root.scrollTop += (r.top - sr.top) - root.clientHeight / 2 + r.height / 2;
+      root.scrollTop +=
+        r.top - sr.top - root.clientHeight / 2 + r.height / 2;
     }
   }
 
-  // Update the measure-info readout (e.g. "5 / 8")
   const info = document.getElementById('measure-info');
+
   if (info) {
     info.textContent = `${state.cursor.measure + 1} / ${measures.length}小節`;
   }
@@ -226,25 +295,36 @@ function renderScore(state) {
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 
-// Overlay a slur-like curve + number on each run of tuplet cells.
+// 連符括弧を描画
 function drawTupletBrackets(root) {
   root.querySelectorAll('.measure').forEach(mEl => {
     const cells = [...mEl.querySelectorAll('.cell.tuplet')];
     let i = 0;
+
     while (i < cells.length) {
       const id = cells[i].dataset.tupletId;
       const n = cells[i].dataset.tupletN;
+
       let j = i;
-      while (j + 1 < cells.length && cells[j + 1].dataset.tupletId === id) j++;
-      const first = cells[i], last = cells[j];
-      // measure offsets via rects (slots live inside a positioned block)
+
+      while (
+        j + 1 < cells.length &&
+        cells[j + 1].dataset.tupletId === id
+      ) {
+        j++;
+      }
+
+      const first = cells[i];
+      const last = cells[j];
+
       const mRect = mEl.getBoundingClientRect();
       const fRect = first.getBoundingClientRect();
       const lRect = last.getBoundingClientRect();
+
       const top = fRect.top - mRect.top;
       const h = lRect.bottom - fRect.top;
+      const W = 16;
 
-      const W = 16; // bracket width to the right of the column
       const wrap = document.createElement('div');
       wrap.className = 'tuplet-bracket';
       wrap.style.top = top + 'px';
@@ -254,44 +334,50 @@ function drawTupletBrackets(root) {
       svg.setAttribute('width', W);
       svg.setAttribute('height', h);
       svg.setAttribute('viewBox', `0 0 ${W} ${h}`);
-      // a curve bowing to the right, covering the notes from top to bottom
+
       const path = document.createElementNS(SVGNS, 'path');
       path.setAttribute('d', `M 2 2 Q ${W - 1} ${h / 2} 2 ${h - 2}`);
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke', '#333');
       path.setAttribute('stroke-width', '1.3');
+
       svg.appendChild(path);
       wrap.appendChild(svg);
 
       const num = document.createElement('span');
       num.className = 'tuplet-num';
       num.textContent = n;
-      num.style.top = (h / 2) + 'px';
-      wrap.appendChild(num);
+      num.style.top = h / 2 + 'px';
 
+      wrap.appendChild(num);
       mEl.appendChild(wrap);
+
       i = j + 1;
     }
   });
 }
 
 function makeSustainGlyph(kind) {
-  // quarter -> ◉ (circle with dot); eighth/half -> triangle with black dot
   const wrap = document.createElement('span');
   wrap.className = 'sustain';
+
   if (kind === 'eighth') {
     wrap.classList.add('tri-dot');
+
     const tri = document.createElement('span');
     tri.className = 'tri';
     tri.textContent = '△';
+
     const dot = document.createElement('span');
     dot.className = 'dot';
     dot.textContent = '●';
+
     wrap.appendChild(tri);
     wrap.appendChild(dot);
   } else {
     wrap.textContent = '◉';
   }
+
   return wrap;
 }
 
@@ -302,10 +388,11 @@ function renderCell(cell, instrumentType) {
   if (cell.iter) {
     const s = document.createElement('span');
     s.className = 'kanji iter-mark';
-    s.textContent = cell.iter;          // 「ゝ」一音の繰り返し
+    s.textContent = cell.iter;
     el.appendChild(s);
     return el;
   }
+
   if (cell.rest) {
     const s = document.createElement('span');
     s.className = 'rest';
@@ -313,159 +400,136 @@ function renderCell(cell, instrumentType) {
     el.appendChild(s);
     return el;
   }
+
   if (cell.sustain) {
     el.appendChild(makeSustainGlyph(cell.sustain));
     return el;
   }
+
   if (cell.unconverted && (!cell.notes || cell.notes.length === 0)) {
     el.classList.add('unconverted');
+
     const s = document.createElement('span');
     s.className = 'unknown';
     s.textContent = cell.unconverted.map(pitchLabel).join(',');
+
     el.appendChild(s);
     return el;
   }
 
-  // One horizontal row: [left symbols (katakana/・)] [chord notes] [right '8'].
-  // All are the same size as the note name. Left sits left like ヲ/オ; '8'
-  // is pinned to the far right.
   const notes = cell.notes || [];
   const leftText = cell.left || [];
   const rightText = cell.right || [];
   const total = notes.length + leftText.length + rightText.length;
+
   if (total > 0) {
     const stack = document.createElement('div');
     const hasMark = notes.some(x => x.leftMark);
-    stack.className = 'stack ' + (total > 1 ? 'chord' : 'single') + (hasMark ? ' has-mark' : '');
-    if (cell.circled) stack.classList.add('circled'); // Shift入力で○囲み（和音はまとめて）
+
+    stack.className =
+      'stack ' +
+      (total > 1 ? 'chord' : 'single') +
+      (hasMark ? ' has-mark' : '');
+
+    if (cell.circled) {
+      stack.classList.add('circled');
+    }
+
     if (notes.length > 1) {
-      // Chord notes side-by-side: keep the glyph height, squeeze them
-      // horizontally (from the sides) so each stays tall/vertical. Gentle
-      // coefficient (0.5) so notes don't get too thin: 2音→0.67, 3音→0.5.
       const sx = 1 / (1 + (notes.length - 1) * 0.5);
       stack.style.transform = `scaleX(${sx.toFixed(3)})`;
       stack.style.transformOrigin = 'center';
     }
+
     const addText = txt => {
       const row = document.createElement('div');
       row.className = 'note-row';
+
       const label = document.createElement('span');
       label.className = 'kanji';
       label.textContent = txt;
+
       row.appendChild(label);
       stack.appendChild(row);
     };
-    // left-side symbols first (so they render to the left)
+
+    // 左側記号
     leftText.forEach(addText);
-    // Build one note-row (mark + kanji) for note `n`. The .circled class
-    // marks this row as needing an individual ring; when multiple notes share
-    // a ring they're wrapped in a .circle-group instead (no per-row class).
-const buildNoteRow = (n, asCircled) => {
-  const row = document.createElement('div');
-  row.className = 'note-row' + (asCircled ? ' circled' : '');
 
-  if (n.leftMark) {
-    const lm = document.createElement('span');
-    lm.className = 'left-mark';
-    lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
-    row.appendChild(lm);
-  }
+    // 音名行
+    const buildNoteRow = (n, asCircled) => {
+      const row = document.createElement('div');
+      row.className = 'note-row' + (asCircled ? ' circled' : '');
 
-  if (n.stringIndex >= 0) {
-    const label = document.createElement('span');
-    label.className = 'kanji';
+      if (n.leftMark) {
+        const lm = document.createElement('span');
+        lm.className = 'left-mark';
+        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
+        row.appendChild(lm);
+      }
 
-    const rawLbl = stringLabel(instrumentType, n.stringIndex) || '?';
-    const displayLbl = displayStringNameForScore(rawLbl, instrumentType);
-
-    label.textContent = displayLbl;
-
-    // 変換後の表示文字で multichar 判定する
-    // 10 → 十 なので multichar にはならない
-    // 11 → 1 なので multichar にはならない
-    if (displayLbl.length > 1) {
-      label.classList.add('multichar');
-    }
-
-    row.appendChild(label);
-  } else {
-    const spacer = document.createElement('span');
-    spacer.className = 'kanji-spacer';
-    row.appendChild(spacer);
-  }
-
-  return row;
-};
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
         label.className = 'kanji';
-      
+
         const rawLbl = stringLabel(instrumentType, n.stringIndex) || '?';
         const displayLbl = displayStringNameForScore(rawLbl, instrumentType);
-      
-        /*
-          十七絃では表示だけ変える：
-          10 → 十
-          11 → 1
-          12 → 2
-          13 → 3
-          14 → 4
-          15 → 5
-          16 → 6
-          17 → 7
-        */
+
         label.textContent = displayLbl;
-      
-        // multichar 判定は変換後の表示文字で行う
+
+        // 変換後の表示文字で判定する
+        // 十七絃の 10 は「十」になるため multichar ではない
         if (displayLbl.length > 1) {
           label.classList.add('multichar');
         }
-      
+
         row.appendChild(label);
       } else {
         const spacer = document.createElement('span');
         spacer.className = 'kanji-spacer';
         row.appendChild(spacer);
       }
-        if (lbl.length > 1) label.classList.add('multichar'); // 十七絃の算用数字など
-        label.textContent = lbl;
-        row.appendChild(label);
-      } else {
-        const spacer = document.createElement('span');
-        spacer.className = 'kanji-spacer';
-        row.appendChild(spacer);
-      }
+
       return row;
     };
 
-    // Per-note circling (=大文字入力). Notes go to the LEFT of the uncircled
-    // ones, preserving original input order. Multiple circled notes share one
-    // ring (like the whole-chord Shift+Enter ring); a lone circled note keeps
-    // its own individual ring.
+    // 大文字入力の○囲み
     const circled = notes.filter(n => n.circled);
     const uncircled = notes.filter(n => !n.circled);
+
     if (circled.length >= 2) {
       const group = document.createElement('div');
       group.className = 'circle-group';
-      circled.forEach(n => group.appendChild(buildNoteRow(n, false)));
+
+      circled.forEach(n => {
+        group.appendChild(buildNoteRow(n, false));
+      });
+
       stack.appendChild(group);
     } else if (circled.length === 1) {
       stack.appendChild(buildNoteRow(circled[0], true));
     }
-    uncircled.forEach(n => stack.appendChild(buildNoteRow(n, false)));
-    // far-right symbols ('8') last so they sit at the right end
+
+    uncircled.forEach(n => {
+      stack.appendChild(buildNoteRow(n, false));
+    });
+
+    // 右側記号
     rightText.forEach(addText);
+
     el.appendChild(stack);
   }
 
-  // Append any partially-unconverted notes as red text alongside
+  // 一部だけ変換できなかった音
   if (cell.unconverted && notes.length > 0) {
     const u = document.createElement('span');
     u.className = 'unknown';
     u.textContent = '+' + cell.unconverted.map(pitchLabel).join(',');
+
     el.appendChild(u);
     el.classList.add('unconverted');
   }
+
   return el;
 }
 
