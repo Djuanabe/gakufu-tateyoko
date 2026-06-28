@@ -226,7 +226,8 @@ function renderDockedInto(container, entries) {
             col.appendChild(mEl);
             if (!measureElsByEntry.has(entry)) measureElsByEntry.set(entry, new Map());
             measureElsByEntry.get(entry).set(k, mEl);
-            renderedH += m.cells.length * OUT_H8;
+            // cells[] は 16 分粒度で持っているが描画は 8 分基準なので /2
+            renderedH += (m.cells.length / 2) * OUT_H8;
             renderedCount++;
           }
         });

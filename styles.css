@@ -554,11 +554,11 @@ body {
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
 .dock-col .measure + .measure { border-top: 3px double #222; }
-/* 列内の最後の小節は、下に小節がなく区切り線が描かれないので
-   自分の下罫として 3px double を持つ。ただし内容が列を埋め切って
-   外枠下罫と接する場合 (.last-touches-frame) は、外枠と共有する
-   ために自分の下罫は描かない (上端と同じ扱い)。 */
-.dock-col .measure:last-child { border-bottom: 3px double #222; }
+/* 列内の最後の小節で下に空白がある場合は、下罫として 1px 一本線
+   を描く (通常の小節区切りの 3px double より細い表現)。
+   内容が列を埋め切って外枠下罫と接する場合 (.last-touches-frame) は、
+   外枠と共有するために自分の下罫は描かない (上端と同じ扱い)。 */
+.dock-col .measure:last-child { border-bottom: 1px solid #222; }
 .dock-col.last-touches-frame .measure:last-child { border-bottom: none; }
 
 /* 内容のない area はレイアウト位置は確保しつつ非表示にして、
