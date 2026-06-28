@@ -238,32 +238,21 @@ function renderDockedInto(container, entries) {
         // Content reaches column bottom → share the outer frame's bottom line
         // instead of drawing a separate measure border-bottom.
         if (renderedH >= COL_INNER_H) col.classList.add('last-touches-frame');
+        // 列の左右の縦罫線を CSS pseudo で「自分の内容の高さ分」だけ描くため、
+        // 内容高さを CSS 変数に渡す。
+        col.style.setProperty('--content-h', renderedH + 'px');
       }
       if (!col.firstChild) col.classList.add('empty');
       columns.push(col);
     });
   });
 
-  // block-start の列は、視覚的に「直前ブロックの最後の列との境界」が
-  // 太線になる位置。border-left を使う新方式では、その境界は DOM-prev
-  // (= 直前ブロックの最終楽器列) の border-left が担うので、そこに
-  // block-end クラスを付ける。
+  // 隣接するブロック境界の太線は、block-start の ::after と block-end の
+  // ::before が同じ境界に重なって描くようにする。block-end は DOM-next が
+  // block-start となる列。
   for (let i = 0; i < columns.length - 1; i++) {
     if (columns[i + 1].classList.contains('block-start')) {
       columns[i].classList.add('block-end');
-    }
-  }
-  // 視覚的に右隣 (DOM-prev) が空列となる内容列は、自分の border-left では
-  // 視覚的な右辺の罫線を描けないので、border-right を出して右辺を囲む。
-  // ただし area の先頭 (DOM 先頭 = 視覚的に最右) は外枠と接するので不要。
-  for (let i = 0; i < columns.length; i++) {
-    const col = columns[i];
-    if (col.classList.contains('empty')) continue;
-    if (i === 0) continue;
-    const sameArea = Math.floor((i - 1) / COLS_PER_AREA) === Math.floor(i / COLS_PER_AREA);
-    if (!sameArea) continue;
-    if (columns[i - 1].classList.contains('empty')) {
-      col.classList.add('right-edge-needed');
     }
   }
 
