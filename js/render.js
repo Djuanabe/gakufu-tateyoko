@@ -168,6 +168,13 @@ function buildMeasureColumn(m, mIdx, opts) {
     const next = cells[i + 1];
     const subdivided = cellHasContent(next) || cursorHere(i + 1);
     const endsBeat = (i + 2) % perBeat === 0;
+    // last beat boundary of the measure: the measure separator (border-top of
+    // the next measure / area's bottom border) provides the bottom border —
+    // skip beat-end here to avoid a doubled line.
+    const isLastInMeasure = (i + 2 >= cells.length);
+    const lineCls = endsBeat
+      ? (isLastInMeasure ? '' : 'beat-end')
+      : 'eighth-end';
 
     if (subdivided) {
       const a = renderCell(cell, type);
@@ -185,7 +192,7 @@ function buildMeasureColumn(m, mIdx, opts) {
       sizeCell(b, h16);
       b.dataset.measure = mIdx;
       b.dataset.cell = i + 1;
-      b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (lineCls) b.classList.add(lineCls);
 
       if (cursorHere(i + 1)) {
         b.classList.add('active');
@@ -197,7 +204,7 @@ function buildMeasureColumn(m, mIdx, opts) {
       sizeCell(a, h8);
       a.dataset.measure = mIdx;
       a.dataset.cell = i;
-      a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (lineCls) a.classList.add(lineCls);
 
       if (cursorHere(i)) {
         a.classList.add('active');

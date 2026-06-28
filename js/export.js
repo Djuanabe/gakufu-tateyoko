@@ -197,10 +197,7 @@ function renderDockedInto(container, entries) {
 
   const multiPart = entries.length > 1;
   const columns = [];
-  // Remember which entry each column belongs to, so we can later overlay that
-  // entry's drawings (straight/wave/arrow/text) onto its first content column.
-  const colEntry = [];
-  blocks.forEach((measureIdxs, blockIdx) => {
+  blocks.forEach(measureIdxs => {
     entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');
       col.className = 'dock-col';
@@ -222,28 +219,8 @@ function renderDockedInto(container, entries) {
         });
       }
       if (!col.firstChild) col.classList.add('empty');
-      colEntry.push({ col, entry, blockIdx, instIdx });
       columns.push(col);
     });
-  });
-
-  // Drawings overlay: each entry's drawings (lines / wave / arrow / text) are
-  // overlaid on its FIRST non-empty column for that entry, so they survive
-  // into the PDF preview.
-  const seenEntries = new Set();
-  colEntry.forEach(ce => {
-    if (seenEntries.has(ce.entry.name)) return;
-    if (ce.col.classList.contains('empty')) return;
-    const drawings = ce.entry.sheet.drawings || [];
-    if (drawings.length === 0) return;
-    const overlay = document.createElement('div');
-    overlay.className = 'draw-overlay';
-    drawings.forEach((d, idx) => {
-      if (typeof makeDrawingEl === 'function') overlay.appendChild(makeDrawingEl(d, idx));
-    });
-    ce.col.style.position = 'relative';
-    ce.col.appendChild(overlay);
-    seenEntries.add(ce.entry.name);
   });
 
   // Fixed grid: every page always shows two areas of 8 same-size columns.
