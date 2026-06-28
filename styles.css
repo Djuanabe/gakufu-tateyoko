@@ -384,7 +384,7 @@ body {
   color: #222;
   padding: 2px 4px;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.85);
+  background: transparent;
   min-width: 1em;
   min-height: 1em;
 }
@@ -495,8 +495,9 @@ body {
 /* The preview area holds one or more B4-landscape PAGES stacked vertically. */
 .dock-preview {
   flex: 1; overflow: auto; padding: 16px; background: #777;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
 }
+.dock-preview > .dock-page { margin: 0 auto; }
 
 /* One output page = B4 landscape; the framed blocks are centred with margins. */
 .dock-page {
@@ -552,6 +553,18 @@ body {
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
 .dock-col .measure + .measure { border-top: 3px double #222; }
+/* 列内の最後の小節は、下に小節がなく区切り線が描かれないので、
+   レイアウトに影響しない pseudo-element で下罫を補う。 */
+.dock-col .measure:last-child {
+  position: relative;
+}
+.dock-col .measure:last-child::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -3px;
+  border-top: 3px double #222;
+  pointer-events: none;
+}
 
 /* 出力上の描画は編集ハンドル非表示・非インタラクティブ */
 .dock-col .drawing { pointer-events: none; cursor: default; }
@@ -574,7 +587,11 @@ body {
      content (scaling rounds away 1px column separators in the PDF). */
   .dock-page {
     width: 364mm; height: 257mm; box-shadow: none; margin: 0;
-    page-break-after: always; break-after: page;
+    overflow: hidden;                /* 余白の端数で次ページに溢れさせない */
   }
-  .dock-page:last-child { page-break-after: auto; break-after: auto; }
+  /* ページ間にだけ改ページを入れる。最終ページの後ろに余分な改ページを
+     付けないことで、白紙ページが追加されるのを防ぐ。 */
+  .dock-page + .dock-page {
+    page-break-before: always; break-before: page;
+  }
 }
