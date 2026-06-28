@@ -372,7 +372,34 @@ function renderCell(cell, instrumentType) {
       if (n.stringIndex >= 0) {
         const label = document.createElement('span');
         label.className = 'kanji';
-        const lbl = stringLabel(instrumentType, n.stringIndex) || '?';
+      
+        const rawLbl = stringLabel(instrumentType, n.stringIndex) || '?';
+        const displayLbl = displayStringNameForScore(rawLbl, instrumentType);
+      
+        /*
+          十七絃では表示だけ変える：
+          10 → 十
+          11 → 1
+          12 → 2
+          13 → 3
+          14 → 4
+          15 → 5
+          16 → 6
+          17 → 7
+        */
+        label.textContent = displayLbl;
+      
+        // multichar 判定は変換後の表示文字で行う
+        if (displayLbl.length > 1) {
+          label.classList.add('multichar');
+        }
+      
+        row.appendChild(label);
+      } else {
+        const spacer = document.createElement('span');
+        spacer.className = 'kanji-spacer';
+        row.appendChild(spacer);
+      }
         if (lbl.length > 1) label.classList.add('multichar'); // 十七絃の算用数字など
         label.textContent = lbl;
         row.appendChild(label);
