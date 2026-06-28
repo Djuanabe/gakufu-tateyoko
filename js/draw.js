@@ -157,6 +157,11 @@ function makeDrawingEl(d, idx) {
   wrap.addEventListener('pointerdown', (e) => {
     if (e.target === handle) return;
     e.preventDefault();
+    // フォーカスを外して、Backspace/Delete が cell-input 経由ではなく
+    // ドキュメントの描画削除ハンドラへ確実に届くようにする
+    if (document.activeElement && document.activeElement !== document.body) {
+      document.activeElement.blur();
+    }
     selectDrawing(idx);
     History.push();
     const sx = e.clientX, sy = e.clientY, ox = d.x, oy = d.y;
@@ -226,6 +231,9 @@ function makeTextEl(d, idx) {
   wrap.addEventListener('pointerdown', (e) => {
     if (e.detail >= 2) return; // double-click handled below
     e.preventDefault();
+    if (document.activeElement && document.activeElement !== document.body) {
+      document.activeElement.blur();
+    }
     selectDrawing(idx);
     History.push();
     const sx = e.clientX, sy = e.clientY, ox = d.x, oy = d.y;

@@ -395,11 +395,15 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedDrawingIdx = -1;
     refresh();
   });
-  // Delete key removes the selected drawing (when not typing in a field)
+  // Delete key removes the selected drawing.
+  // テキスト編集中 (空でない INPUT) は通常の文字削除を優先する。
+  // 空の INPUT にフォーカスがある時でも描画が選ばれていれば削除する。
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
     if (selectedDrawingIdx < 0) return;
+    const a = document.activeElement;
+    const isInput = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA');
+    if (isInput && (a.value || '') !== '') return;
     e.preventDefault();
     History.push();
     State.removeDrawing(selectedDrawingIdx);
