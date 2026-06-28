@@ -280,7 +280,11 @@ function renderDockedInto(container, entries) {
     c.className = 'dock-col empty';
     return c;
   };
+  // Areas with no content at all (e.g., the left/2nd-read area on the only
+  // page of a short score) are skipped so the surviving area is centered by
+  // the page's justify-content: center — left/right symmetric output.
   const mkArea = cols => {
+    if (!cols.some(c => c && !c.classList.contains('empty'))) return null;
     const area = document.createElement('div'); area.className = 'dock-area';
     const inner = document.createElement('div'); inner.className = 'dock-area-inner';
     for (let i = 0; i < COLS_PER_AREA; i++) inner.appendChild(cols[i] || emptyCol());
@@ -292,9 +296,11 @@ function renderDockedInto(container, entries) {
     const pageCols = columns.slice(pg * COLS_PER_PAGE, (pg + 1) * COLS_PER_PAGE);
     const page = document.createElement('div');
     page.className = 'dock-page';
-    page.appendChild(mkArea(pageCols.slice(COLS_PER_AREA)));    // visually left (read 2nd)
-    page.appendChild(mkArea(pageCols.slice(0, COLS_PER_AREA))); // visually right (read 1st)
-    container.appendChild(page);
+    const leftArea = mkArea(pageCols.slice(COLS_PER_AREA));    // visually left (read 2nd)
+    const rightArea = mkArea(pageCols.slice(0, COLS_PER_AREA)); // visually right (read 1st)
+    if (leftArea) page.appendChild(leftArea);
+    if (rightArea) page.appendChild(rightArea);
+    if (page.firstChild) container.appendChild(page);
   }
 
   if (typeof drawTupletBrackets === 'function') drawTupletBrackets(container);
