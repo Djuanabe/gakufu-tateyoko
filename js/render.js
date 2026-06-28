@@ -45,6 +45,7 @@ function buildMeasureColumn(m, mIdx, opts) {
   const cursorHere = opts.isCursorCell || (() => false);
   const h8 = opts.h8 || H8;          // override for shrunk PDF output
   const h16 = h8 / 2;
+  const mergeEmptyBeats = !!opts.mergeEmptyBeats; // 出力: 空拍を1セルで表示
 
   const mEl = document.createElement('div');
   mEl.className = 'measure';
@@ -104,10 +105,39 @@ function buildMeasureColumn(m, mIdx, opts) {
       continue;
     }
 
+    // ---- Empty-beat merging (PDF出力): a whole beat with no content
+    // becomes ONE cell (top + bottom borders + half-beat dash inside) so each
+    // beat shows as a 4-sided box matching the reference layout. ----
+    if (mergeEmptyBeats && i % perBeat === 0) {
+      let allEmpty = true;
+      for (let k = 0; k < perBeat && i + k < cells.length; k++) {
+        if (cellHasContent(cells[i + k]) || cursorHere(i + k) || cells[i + k].tuplet) {
+          allEmpty = false; break;
+        }
+      }
+      if (allEmpty) {
+        const span = Math.min(perBeat, cells.length - i);
+        const a = renderCell(cells[i], type);
+        sizeCell(a, span * h16);
+        a.classList.add('beat-empty');
+        const isLastBeatOfMeasure = (i + span >= cells.length);
+        if (!isLastBeatOfMeasure) a.classList.add('beat-end');
+        a.dataset.measure = mIdx; a.dataset.cell = i;
+        mEl.appendChild(a);
+        i += span;
+        continue;
+      }
+    }
+
     // ---- Normal eighth pair (cells i, i+1) ----
     const next = cells[i + 1];
     const subdivided = cellHasContent(next) || cursorHere(i + 1);
     const endsBeat = ((i + 2) % perBeat === 0);
+    // last cell of the measure: the measure separator below provides the
+    // bottom border, so don't add a beat-end (avoids a doubled line).
+    const isLastInMeasure = (i + 2 >= cells.length);
+    const beatEndClass = endsBeat && !isLastInMeasure ? 'beat-end'
+                        : (endsBeat ? '' : 'eighth-end');
 
     if (subdivided) {
       const a = renderCell(cell, type);
@@ -119,14 +149,14 @@ function buildMeasureColumn(m, mIdx, opts) {
       const b = renderCell(next || newCell(), type);
       sizeCell(b, h16);
       b.dataset.measure = mIdx; b.dataset.cell = i + 1;
-      b.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (beatEndClass) b.classList.add(beatEndClass);
       if (cursorHere(i + 1)) b.classList.add('active');
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
       sizeCell(a, h8);
       a.dataset.measure = mIdx; a.dataset.cell = i;
-      a.classList.add(endsBeat ? 'beat-end' : 'eighth-end');
+      if (beatEndClass) a.classList.add(beatEndClass);
       if (cursorHere(i)) a.classList.add('active');
       mEl.appendChild(a);
     }

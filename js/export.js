@@ -208,6 +208,7 @@ function renderDockedInto(container, entries) {
             instrumentType: entry.sheet.instrumentType,
             tunings: entry.sheet.tunings,
             h8: OUT_H8,
+            mergeEmptyBeats: true,
           }));
         }
       });
@@ -217,8 +218,22 @@ function renderDockedInto(container, entries) {
 
   // Fixed grid: every page always shows two areas of 8 same-size columns.
   // Blank slots are padded with empty columns so the 16拍×8列 layout stays
-  // aligned (empty columns show no divider lines).
-  const emptyCol = () => { const c = document.createElement('div'); c.className = 'dock-col empty'; return c; };
+  // aligned. Empty columns are filled with 4 empty 4/4 measures so each
+  // beat-cell is still drawn as a 4-sided box matching the rest of the page.
+  const emptyCol = () => {
+    const c = document.createElement('div');
+    c.className = 'dock-col empty';
+    for (let k = 0; k < 4; k++) {
+      const m = newMeasure(4, 4);
+      c.appendChild(buildMeasureColumn(m, k, {
+        instrumentType: '13',
+        tunings: [],
+        h8: OUT_H8,
+        mergeEmptyBeats: true,
+      }));
+    }
+    return c;
+  };
   const mkArea = cols => {
     const area = document.createElement('div'); area.className = 'dock-area';
     const inner = document.createElement('div'); inner.className = 'dock-area-inner';
