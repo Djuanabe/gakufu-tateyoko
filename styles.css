@@ -535,20 +535,17 @@ body {
   box-sizing: border-box;
   background: #fffef7;
   flex: 0 0 auto;
-  border-right: 1px solid #222;        /* 同じブロック内の列区切り = 細い一本線 */
   position: relative;
 }
-/* ブロック境界(n重奏のn列ごと)は太い一本線で区切る */
-.dock-col.block-start { border-right: 3px solid #222; }
-.dock-area-inner > .dock-col:first-child,
-.dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
 .dock-col.empty { background: transparent; } /* 空列は外枠の塗りを邪魔しない */
-/* rightmost column of an area butts against the area frame — no own separator */
-.dock-area-inner > .dock-col:first-child { border-right: none; }
-/* 空列も列区切り (border-right) は描く: 内容列の隣にある空列の border-right が
-   その内容列の視覚的な左境界を担う。本当に何も描きたくないのは中の拍セルだけ。 */
-.dock-area-inner > .dock-col.block-start:first-child { border-right: none; }
-.dock-col .measure { border-right: none; width: 100%; }
+/* 列区切り線は列自身ではなく中の小節 (=表示されている拍) にだけ載せる。
+   row-reverse 配置で「ある列の視覚的な左境界線 = その列の左罫」となるため、
+   border-left を採用すると空列の上には縦線が描かれず、内容列の左側だけが
+   囲まれる。一番左 (DOM 末尾 = 視覚的に最左) の列は外枠と接するので消す。 */
+.dock-col .measure { border-right: none; border-left: 1px solid #222; width: 100%; }
+/* ブロック境界 (直前のブロックの最終楽器列の左罫) は太い 3px に */
+.dock-col.block-end .measure { border-left: 3px solid #222; }
+.dock-area-inner > .dock-col:last-child .measure { border-left: none; }
 /* 小節ごとの区切りは二重線（縦に積むので上罫） */
 /* 小節線: 拍線(1px)と同じ太さの線を2本 */
 .dock-col .measure + .measure { border-top: 3px double #222; }

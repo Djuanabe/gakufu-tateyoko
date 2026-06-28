@@ -168,12 +168,14 @@ function buildMeasureColumn(m, mIdx, opts) {
     const next = cells[i + 1];
     const subdivided = cellHasContent(next) || cursorHere(i + 1);
     const endsBeat = (i + 2) % perBeat === 0;
-    // last beat boundary of the measure: the measure separator (border-top of
-    // the next measure / area's bottom border) provides the bottom border —
-    // skip beat-end here to avoid a doubled line.
+    // 出力 (dock) 配置では小節同士は縦に積まれ、次の小節の border-top や
+    // 外枠下罫が小節底の線を担うので、最終セルの beat-end は二重線を避ける
+    // ため省く。編集画面は小節が横並びなので、拍子混在時に短い小節の底に
+    // 線が無くなるのを避けるため最終セルにも beat-end を出す。
     const isLastInMeasure = (i + 2 >= cells.length);
+    const skipLastBottom = !!opts.h8 && isLastInMeasure;
     const lineCls = endsBeat
-      ? (isLastInMeasure ? '' : 'beat-end')
+      ? (skipLastBottom ? '' : 'beat-end')
       : 'eighth-end';
 
     if (subdivided) {

@@ -244,6 +244,16 @@ function renderDockedInto(container, entries) {
     });
   });
 
+  // block-start の列は、視覚的に「直前ブロックの最後の列との境界」が
+  // 太線になる位置。border-left を使う新方式では、その境界は DOM-prev
+  // (= 直前ブロックの最終楽器列) の border-left が担うので、そこに
+  // block-end クラスを付ける。
+  for (let i = 0; i < columns.length - 1; i++) {
+    if (columns[i + 1].classList.contains('block-start')) {
+      columns[i].classList.add('block-end');
+    }
+  }
+
   // Drawings: anchor each drawing to the measure it sits over in the editor
   // (the editor system is laid out row-reverse with 138px-wide measures), then
   // place a scaled copy inside the corresponding output measure. Editor and
