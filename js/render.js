@@ -37,7 +37,8 @@ function cellHasContent(c) {
       (c.notes && c.notes.length > 0) ||
       c.rest ||
       c.sustain ||
-      c.unconverted
+      c.unconverted ||
+      c.iter
     )
   );
 }
