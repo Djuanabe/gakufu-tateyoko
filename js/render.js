@@ -255,11 +255,18 @@ function renderScore(state) {
     renderDrawings(sys, state);
   }
 
-  // セルクリックでカーソル移動
+  // セルクリックでカーソル移動。
+  // 描画 (繰り返し記号など) を選択中だった場合は解除する。これをしないと
+  // セル編集中に Backspace が描画削除へ飛んで消えてしまう。
   root.querySelectorAll('.cell').forEach(el => {
     el.addEventListener('click', () => {
       const mIdx = parseInt(el.dataset.measure, 10);
       const cIdx = parseInt(el.dataset.cell, 10);
+
+      if (typeof selectedDrawingIdx !== 'undefined' && selectedDrawingIdx >= 0) {
+        selectedDrawingIdx = -1;
+        document.querySelectorAll('.drawing.selected').forEach(d => d.classList.remove('selected'));
+      }
 
       State.setCursor(mIdx, cIdx, 0);
       renderScore(State);
