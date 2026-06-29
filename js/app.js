@@ -65,13 +65,8 @@ function commitEnter(text, opts) {
 function commitSpace(text, opts) {
   const c0 = State.currentCell();
   const inTuplet = c0 && c0.tuplet && c0.tuplet.pos != null;
+  // 空 Space は休符 (△＋黒丸) を置かず、単に 1/4 拍進めるだけ。
   if (text.trim() === '') {
-    const cell = State.currentCell();
-    if (cell) {
-      const keepTuplet = cell.tuplet;
-      Object.assign(cell, newCell(), { sustain: 'eighth' }); // △＋黒丸
-      if (keepTuplet) cell.tuplet = keepTuplet;
-    }
     if (inTuplet) State.advanceTupletSlot(); else State.advanceSixteenth();
     State.cursor.unit = 'quarter';
     return true;
@@ -126,7 +121,7 @@ function handleBackspace() {
   const cell = State.currentCell();
   const has = cell && (
     (cell.notes && cell.notes.length > 0) || cell.rest || cell.sustain ||
-    cell.unconverted || (cell.left && cell.left.length > 0)
+    cell.unconverted || cell.iter || (cell.left && cell.left.length > 0)
   );
   if (has) {
     // A note name is shown here: delete it (a half-beat note clears its
