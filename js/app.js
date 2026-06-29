@@ -396,8 +396,8 @@ document.addEventListener('DOMContentLoaded', () => {
     refresh();
   });
   // Delete key removes the selected drawing.
+  // キャプチャフェーズで受けて、cell-input の keydown より先に処理する。
   // テキスト編集中 (空でない INPUT) は通常の文字削除を優先する。
-  // 空の INPUT にフォーカスがある時でも描画が選ばれていれば削除する。
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Delete' && e.key !== 'Backspace') return;
     if (selectedDrawingIdx < 0) return;
@@ -405,11 +405,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const isInput = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA');
     if (isInput && (a.value || '') !== '') return;
     e.preventDefault();
+    e.stopImmediatePropagation();
     History.push();
     State.removeDrawing(selectedDrawingIdx);
     selectedDrawingIdx = -1;
     refresh();
-  });
+  }, true);
   document.getElementById('add-measure').addEventListener('click', () => {
     History.push();
     State.addMeasure();
