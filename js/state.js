@@ -295,15 +295,32 @@ const State = {
   },
 
   /* Drawings ---------------------------------------------------------- */
+  // カーソルが現在指しているセルの左上を、system 内の絶対座標で返す。
+  // row-reverse の system では measure mIdx の左端 x = sysW - (mIdx+1)×138。
+  _cursorPixelPos() {
+    const MEASURE_W = 138;
+    const H8_PX = 46;
+    const measures = this.activeMeasures();
+    if (!measures || measures.length === 0) return { x: 24, y: 24 };
+    const sysW = measures.length * MEASURE_W;
+    const mIdx = Math.max(0, Math.min(this.cursor.measure, measures.length - 1));
+    const cIdx = Math.max(0, this.cursor.cell);
+    return {
+      x: sysW - (mIdx + 1) * MEASURE_W,
+      y: Math.floor(cIdx / 2) * H8_PX,
+    };
+  },
   addDrawing(type, orient) {
     if (!this.sheet.drawings) this.sheet.drawings = [];
-    this.sheet.drawings.push({ type, orient, x: 24, y: 24, length: 120 });
+    const pos = this._cursorPixelPos();
+    this.sheet.drawings.push({ type, orient, x: pos.x, y: pos.y, length: 120 });
     return this.sheet.drawings.length - 1;
   },
   // Free-form text annotation overlay (separate type stored in drawings).
   addText(text, orient) {
     if (!this.sheet.drawings) this.sheet.drawings = [];
-    this.sheet.drawings.push({ type: 'text', text: text || '文章', orient: orient || 'h', x: 24, y: 24 });
+    const pos = this._cursorPixelPos();
+    this.sheet.drawings.push({ type: 'text', text: text || '文章', orient: orient || 'h', x: pos.x, y: pos.y });
     return this.sheet.drawings.length - 1;
   },
   setDrawingText(idx, text) {
