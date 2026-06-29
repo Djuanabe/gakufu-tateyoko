@@ -175,9 +175,21 @@ const State = {
       // ensemble parts stay aligned
       const ts = m.timeSignature;
       this.sheet.parts.forEach(p => p.measures.push(newMeasure(ts.num, ts.den)));
+      this._shiftDrawingsForAppendedMeasure();
       this.cursor.measure++;
       this.cursor.cell = 0;
     }
+  },
+
+  // row-reverse の system では小節を末尾に追加すると、既存の小節は
+  // 全て右へ 1 小節分 (=138px) ずれる。描画 (繰り返し・線・テキスト等) は
+  // 絶対座標で持っているため、放置すると元々重ねていた小節からズレてしまう。
+  // 追加時に同じ分だけ x をシフトしてアンカー位置を保つ。
+  _shiftDrawingsForAppendedMeasure() {
+    const MEASURE_W = 138;
+    const list = this.sheet.drawings;
+    if (!list || !list.length) return;
+    list.forEach(d => { d.x = (d.x || 0) + MEASURE_W; });
   },
 
   advanceHalfBeat() {
@@ -354,6 +366,7 @@ const State = {
     const ts = this.sheet.timeSignature;
     // keep every part the same length
     this.sheet.parts.forEach(p => p.measures.push(newMeasure(ts.num, ts.den)));
+    this._shiftDrawingsForAppendedMeasure();
   },
 
   changeTimeSignatureFromHere(num, den, fromMeasure) {
