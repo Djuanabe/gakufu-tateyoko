@@ -364,20 +364,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('draw-add').addEventListener('click', () => {
     History.push();
     const type = document.getElementById('draw-type').value;
-    // 繰り返し記号は描画ではなく音名と同じセル内容として扱う。
-    // 現在のセルに iter='ゝ' を入れ、半拍進める (入力欄から '5' を打った時と同じ挙動)。
-    if (type === 'repeat') {
-      const cell = State.currentCell();
-      if (cell) {
-        Object.assign(cell, { iter: 'ゝ', notes: [], rest: null, sustain: null,
-          unconverted: null, circled: false, left: [], right: [], centerText: [] });
-        State.advanceHalfBeat();
-      }
-      refresh();
-      return;
-    }
-    const orient = document.getElementById('draw-orient').value;
+    let orient = document.getElementById('draw-orient').value;
+    if (type === 'repeat') orient = 'v'; // 繰り返しは音の進行方向(縦)に沿う
     selectedDrawingIdx = State.addDrawing(type, orient);
+    if (type === 'repeat') {
+      // length は 1/4 拍 (=H16) 単位。既定は 2 拍 (=8 個分) 分。
+      State.sheet.drawings[selectedDrawingIdx].length = 4 * H8;
+    }
     refresh();
   });
   document.getElementById('text-add').addEventListener('click', () => {
