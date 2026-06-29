@@ -83,16 +83,18 @@ function buildDrawingSvg(d) {
 
   if (d.type === 'repeat') {
     // 繰り返し記号: ひらがな「く」を縦方向に伸ばして「くの字点」にする。
-    // 1 個ずつが分かるよう、viewBox に上下の余白を入れて、隣接する 2 個が
-    // 連続した 1 個に見えないようにする。
-    svg.setAttribute('viewBox', '0 0 24 30');
+    // viewBox を 24×24 にして「く」が wrap (= 描画サイズ) 全体を埋めるよう
+    // にし、リサイズハンドルが視覚的な「く」の終端からはみ出さないように。
+    // font-size を 20 にすることで上に小さな余白ができ、2 個並べた時の上下
+    // の境界が見える。
+    svg.setAttribute('viewBox', '0 0 24 24');
     svg.setAttribute('preserveAspectRatio', 'none');
     const t = document.createElementNS(DRAW_NS, 'text');
     t.setAttribute('x', '12');
-    t.setAttribute('y', '21');
+    t.setAttribute('y', '19');
     t.setAttribute('text-anchor', 'middle');
     t.setAttribute('font-family', '"Yuji Syuku","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif');
-    t.setAttribute('font-size', '22');
+    t.setAttribute('font-size', '20');
     t.setAttribute('fill', INK);
     t.textContent = 'く';
     svg.appendChild(t);
