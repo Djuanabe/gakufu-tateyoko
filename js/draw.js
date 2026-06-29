@@ -189,9 +189,9 @@ function makeDrawingEl(d, idx) {
     const move = (ev) => {
       const delta = d.orient === 'h' ? (ev.clientX - sx) : (ev.clientY - sy);
       if (d.type === 'repeat') {
-        // 半拍(=H8)単位でスナップして拍数を変える（最小1半拍）
-        const units = Math.max(1, Math.round((oL + delta) / H8));
-        d.length = units * H8;
+        // 1/4 拍 (=H16) 単位でスナップ。最小は 1/4 拍。
+        const units = Math.max(1, Math.round((oL + delta) / H16));
+        d.length = units * H16;
       } else {
         d.length = Math.max(10, Math.round(oL + delta));
       }
