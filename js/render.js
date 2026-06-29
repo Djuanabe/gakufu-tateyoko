@@ -270,28 +270,23 @@ function renderScore(state) {
     });
   });
 
-  // カーソルセルを表示範囲内に保つ
+  // カーソルセルを表示範囲内に保つ。row-reverse 配置で offsetLeft が
+  // ブラウザにより一貫しないので、scrollIntoView でブラウザ任せにする。
   const active = root.querySelector('.cell.active');
 
   if (active) {
     const r = active.getBoundingClientRect();
     const sr = root.getBoundingClientRect();
+    const outsideH = r.left < sr.left || r.right > sr.right;
+    const outsideV = r.top < sr.top || r.bottom > sr.bottom;
 
-    if (r.left < sr.left || r.right > sr.right) {
+    if (outsideH || outsideV) {
       const measureEl = active.closest('.measure');
-
       if (measureEl) {
-        const offset =
-          measureEl.offsetLeft -
-          (root.clientWidth / 2 - measureEl.clientWidth / 2);
-
-        root.scrollLeft = offset;
+        measureEl.scrollIntoView({ inline: 'center', block: 'nearest' });
+      } else {
+        active.scrollIntoView({ inline: 'center', block: 'nearest' });
       }
-    }
-
-    if (r.top < sr.top || r.bottom > sr.bottom) {
-      root.scrollTop +=
-        r.top - sr.top - root.clientHeight / 2 + r.height / 2;
     }
   }
 
