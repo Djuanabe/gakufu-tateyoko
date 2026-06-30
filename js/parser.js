@@ -25,9 +25,12 @@ const SPECIAL_TOKENS = {
   '3': {type: 'sustain', value: 'quarter'},
   '4': {type: 'sustain', value: 'eighth'},
   '5': {type: 'iter', value: 'ゝ'},   // 一音の繰り返し記号
+  'w': {type: 'mark', value: 'ヲ'},
+  'o': {type: 'mark', value: 'オ'},
 };
 
-// 'w' → ヲ, 'o' → オ; hiragana/katakana tokens are treated as kana left-marks.
+// 'w'/'o' combined with notes, or hiragana/katakana combined with notes →
+// kana left-mark on each note.
 const KANA_MARK_MAP = { w: 'ヲ', o: 'オ' };
 const KANA_RE = /^[ぁ-ゖァ-ヺー・]+$/;
 
@@ -68,9 +71,10 @@ function parseCellInput(text) {
     }
   }
 
-  // Pure kana with no notes → standalone left-mark cell (like o/w alone).
-  if (kanaMarks.length > 0 && notes.length === 0 && left.length === 0) {
-    return { type: 'mark', value: kanaMarks[0] };
+  // Pure kana with no notes → treat as center text (left[] column), same as before.
+  if (kanaMarks.length > 0 && notes.length === 0) {
+    return { type: 'composite', notes: [], kanaLeftMark: null,
+             left: [...kanaMarks, ...left], right };
   }
 
   // Kana + notes → composite with kanaLeftMark applied to each note.
