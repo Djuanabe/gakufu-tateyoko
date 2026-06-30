@@ -229,7 +229,7 @@ const State = {
     if (!m) return 'half';
     if (cIdx % 2 === 1) return 'quarter';
     const next = m.cells[cIdx + 1];
-    const nextHas = next && ((next.notes && next.notes.length) || next.rest || next.sustain || next.unconverted || next.iter);
+    const nextHas = next && ((next.notes && next.notes.length) || next.rest || next.sustain || next.unconverted || next.iter || (next.left && next.left.length) || (next.right && next.right.length));
     return nextHas ? 'quarter' : 'half';
   },
 
@@ -237,7 +237,7 @@ const State = {
   // it (blank cell => half-beat cursor).
   syncUnitToCell() {
     const c = this.currentCell();
-    const has = c && ((c.notes && c.notes.length) || c.rest || c.sustain || c.unconverted || c.iter);
+    const has = c && ((c.notes && c.notes.length) || c.rest || c.sustain || c.unconverted || c.iter || (c.left && c.left.length) || (c.right && c.right.length));
     this.cursor.unit = has ? this.noteUnitAt(this.cursor.measure, this.cursor.cell) : 'half';
   },
 
