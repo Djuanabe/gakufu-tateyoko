@@ -71,8 +71,13 @@ function parseCellInput(text) {
     }
   }
 
-  // Pure kana with no notes → treat as center text (left[] column), same as before.
+  // Pure kana with no notes:
+  //   区切り記号あり → 左マークセル（oと同じ挙動）
+  //   区切り記号なし → 従来通り中央に表示
   if (kanaMarks.length > 0 && notes.length === 0) {
+    if (/[,、]/.test(t)) {
+      return { type: 'mark', value: kanaMarks[0] };
+    }
     return { type: 'composite', notes: [], kanaLeftMark: null,
              left: [...kanaMarks, ...left], right };
   }
