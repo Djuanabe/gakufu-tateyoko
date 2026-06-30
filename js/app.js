@@ -290,10 +290,19 @@ function handleBackspace() {
     refresh();
     return;
   }
-  // Blank location: retreat by the cursor's current unit, then let the unit
-  // follow the note now under the cursor (blank => half-beat cursor).
-  if (State.cursor.unit === 'quarter') State.retreatSixteenth();
-  else State.retreatHalfBeat();
+  // Blank location: always retreat exactly 1 sixteenth first.
+  // If that lands on an empty odd cell (invisible filler), retreat 1 more
+  // to reach the even cell that owns the display slot.
+  State.retreatSixteenth();
+  if (State.cursor.cell % 2 === 1) {
+    const prev = State.currentCell();
+    const prevEmpty = !prev || (
+      !(prev.notes && prev.notes.length) && !prev.rest && !prev.sustain &&
+      !prev.unconverted && !prev.iter &&
+      !(prev.left && prev.left.length) && !(prev.right && prev.right.length)
+    );
+    if (prevEmpty) State.retreatSixteenth();
+  }
   State.syncUnitToCell();
   refresh();
 }
