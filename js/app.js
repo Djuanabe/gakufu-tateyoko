@@ -663,6 +663,10 @@ document.addEventListener('DOMContentLoaded', () => {
     History.push();
     State.setInstrumentType(e.target.value);
     State.reconvertAll();
+    // 十七絃はヘ音記号、十三絃はト音記号をデフォルトにする
+    const defaultClef = e.target.value === '17' ? 'bass' : 'treble';
+    document.getElementById('clef').value = defaultClef;
+    renderStaff();
     refresh();
   });
 
