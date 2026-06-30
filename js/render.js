@@ -483,7 +483,7 @@ function renderCell(cell, instrumentType) {
       if (n.leftMark) {
         const lm = document.createElement('span');
         lm.className = 'left-mark';
-        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || '';
+        lm.textContent = LEFT_MARK_GLYPH[n.leftMark] || n.leftMark || '';
         row.appendChild(lm);
       }
 

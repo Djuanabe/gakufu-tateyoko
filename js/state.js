@@ -74,7 +74,8 @@ function pitchToMidi(p) {
 
 function newCell() {
   return { notes: [], rest: null, sustain: null, unconverted: null, raw: '',
-           tuplet: null, circled: false, centerText: [], left: [], right: [], iter: null };
+           tuplet: null, circled: false, centerText: [], left: [], right: [], iter: null,
+           kanaLeftMark: null };
 }
 
 // Smallest cell = a sixteenth note (= quarter of a beat when den=4).
@@ -371,6 +372,9 @@ const State = {
           if (c.unconverted) for (const p of c.unconverted) pitches.push(p);
           if (pitches.length === 0) continue;
           applyChord(c, pitches, tuning);
+          if (c.kanaLeftMark) {
+            c.notes.forEach(n => { n.leftMark = c.kanaLeftMark; });
+          }
           if (standalone.length > 0) {
             c.notes = [...standalone, ...(c.notes || [])];
           }

@@ -25,9 +25,11 @@ const SPECIAL_TOKENS = {
   '3': {type: 'sustain', value: 'quarter'},
   '4': {type: 'sustain', value: 'eighth'},
   '5': {type: 'iter', value: 'ゝ'},   // 一音の繰り返し記号
-  'w': {type: 'mark', value: 'wo'},
-  'o': {type: 'mark', value: 'o'}
 };
+
+// 'w' → ヲ, 'o' → オ; hiragana/katakana tokens are treated as kana left-marks.
+const KANA_MARK_MAP = { w: 'ヲ', o: 'オ' };
+const KANA_RE = /^[ぁ-ゖァ-ヺー・]+$/;
 
 // Convert hiragana to katakana (leave everything else untouched).
 function toKatakana(s) {
@@ -43,10 +45,11 @@ function parseCellInput(text) {
   const low = t.toLowerCase();
   if (SPECIAL_TOKENS[low]) return SPECIAL_TOKENS[low];
 
-  // Tokens: note tokens form the chord (center); '8' is a symbol pinned to the
-  // far RIGHT; any other non-note token (katakana, ・ など) is a symbol placed
-  // to the LEFT (like ヲ/オ), at note size.
+  // Tokens: note tokens form the chord; '8' pins to the far RIGHT;
+  // 'w'/'o'/hiragana/katakana tokens become kana left-marks; everything
+  // else goes to the LEFT symbol column.
   const notes = [];
+  const kanaMarks = [];
   const left = [];
   const right = [];
   for (const tok of t.split(SEP_RE).filter(Boolean)) {
@@ -56,11 +59,23 @@ function parseCellInput(text) {
       // Uppercase note letter (A〜G) means: circle THIS note only.
       note.circled = /[A-G]/.test(tok);
       notes.push(note);
+    } else if (KANA_MARK_MAP[tok.toLowerCase()]) {
+      kanaMarks.push(KANA_MARK_MAP[tok.toLowerCase()]);
+    } else if (KANA_RE.test(tok)) {
+      kanaMarks.push(toKatakana(tok));
     } else {
       left.push(toKatakana(tok));
     }
   }
-  return { type: 'composite', notes, left, right };
+
+  // Pure kana with no notes → standalone left-mark cell (like o/w alone).
+  if (kanaMarks.length > 0 && notes.length === 0 && left.length === 0) {
+    return { type: 'mark', value: kanaMarks[0] };
+  }
+
+  // Kana + notes → composite with kanaLeftMark applied to each note.
+  const kanaLeftMark = kanaMarks.length > 0 ? kanaMarks[0] : null;
+  return { type: 'composite', notes, kanaLeftMark, left, right };
 }
 
 function parseNoteToken(tok) {

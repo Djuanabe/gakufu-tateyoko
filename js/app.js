@@ -177,7 +177,7 @@ function applyInputToCell(text, opts) {
   if (parsed.type === 'mark') {
     cell.notes = [{ stringIndex: -1, leftMark: parsed.value, source: null }];
     cell.rest = null; cell.sustain = null; cell.unconverted = null; cell.circled = circle;
-    cell.centerText = []; cell.left = []; cell.iter = null;
+    cell.centerText = []; cell.left = []; cell.iter = null; cell.kanaLeftMark = null;
     return 'half';
   }
   if (parsed.type === 'iter') {
@@ -194,6 +194,10 @@ function applyInputToCell(text, opts) {
     cell.rest = null; cell.sustain = null;
     cell.raw = text;
     cell.circled = circle; // 和音もまとめて○で囲む
+    cell.kanaLeftMark = parsed.kanaLeftMark || null;
+    if (parsed.kanaLeftMark) {
+      cell.notes.forEach(n => { n.leftMark = parsed.kanaLeftMark; });
+    }
     return 'half';
   }
   return 'done';
