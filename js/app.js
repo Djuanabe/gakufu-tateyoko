@@ -435,6 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
   scoreEl.addEventListener('mousedown', (e) => {
     const el = e.target.closest('.cell');
     if (!el || e.button !== 0) return;
+    e.preventDefault(); // ブラウザのテキスト選択（音名文字のハイライト）を防ぐ
     _selMouseDown  = true;
     _selDragActive = false;
     const mIdx = parseInt(el.dataset.measure, 10);
