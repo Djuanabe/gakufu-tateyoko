@@ -183,7 +183,11 @@ function buildMeasureColumn(m, mIdx, opts) {
 
     if (subdivided) {
       const a = renderCell(cell, type);
-      sizeCell(a, h16);
+      a.style.height = h16 + 'px';
+      a.style.fontSize = h8 * FONT_FILL + 'px';
+      a.style.display = 'flex';
+      a.style.alignItems = 'center';
+      a.style.justifyContent = 'center';
       a.dataset.measure = mIdx;
       a.dataset.cell = i;
       if (cursorHere(i)) a.classList.add('active');
@@ -191,7 +195,11 @@ function buildMeasureColumn(m, mIdx, opts) {
       mEl.appendChild(a);
 
       const b = renderCell(next || newCell(), type);
-      sizeCell(b, h16);
+      b.style.height = h16 + 'px';
+      b.style.fontSize = h8 * FONT_FILL + 'px';
+      b.style.display = 'flex';
+      b.style.alignItems = 'center';
+      b.style.justifyContent = 'center';
       b.dataset.measure = mIdx;
       b.dataset.cell = i + 1;
       if (lineCls) b.classList.add(lineCls);

@@ -225,6 +225,7 @@ function makeTextEl(d, idx) {
     + (idx === selectedDrawingIdx ? ' selected' : '');
   wrap.style.left = d.x + 'px';
   wrap.style.top = d.y + 'px';
+  if (d.textFontSize) wrap.style.fontSize = d.textFontSize + 'px';
   wrap.appendChild(italicizeRomaji(d.text && d.text.length > 0 ? d.text : '（文章）'));
 
   // drag to move

@@ -183,11 +183,16 @@ function renderDockedInto(container, entries) {
   const maxMeasures = Math.max(0, ...entries.map(e => e.sheet.parts[0].measures.length));
   // Group lead-part measures into ≤16-beat blocks (never split a measure).
   const blocks = [];
-  let blk = [], beats = 0;
+  const measurePxH = (k) => {
+    const m = entries[0].sheet.parts[0].measures[k];
+    return m ? (m.cells.length / 2) * OUT_H8 : OUT_H8 * 8;
+  };
+  let blk = [], blkH = 0;
   for (let k = 0; k < maxMeasures; k++) {
-    const mb = beatsOfMeasure(entries[0].sheet.parts[0].measures[k]);
-    if (blk.length && beats + mb > BEATS_PER_COL) { blocks.push(blk); blk = []; beats = 0; }
-    blk.push(k); beats += mb;
+    const mH = measurePxH(k);
+    if (blk.length && blkH + 3 + mH > COL_INNER_H) { blocks.push(blk); blk = []; blkH = 0; }
+    blkH += (blk.length > 0 ? 3 : 0) + mH;
+    blk.push(k);
   }
   if (blk.length) blocks.push(blk);
 
@@ -212,37 +217,25 @@ function renderDockedInto(container, entries) {
       const contentIdxs = measureIdxs.filter(k => measureHasAnyContent(entry.sheet.parts[0].measures[k]));
       let renderedH = 0;
       let renderedCount = 0;
-      if (contentIdxs.length > 0) {
-        const lo = contentIdxs[0], hi = contentIdxs[contentIdxs.length - 1];
-        measureIdxs.forEach(k => {
-          if (k < lo || k > hi) return;
-          const m = entry.sheet.parts[0].measures[k];
-          if (m) {
-            const mEl = buildMeasureColumn(m, k, {
-              instrumentType: entry.sheet.instrumentType,
-              tunings: entry.sheet.tunings,
-              h8: OUT_H8,
-            });
-            col.appendChild(mEl);
-            if (!measureElsByEntry.has(entry)) measureElsByEntry.set(entry, new Map());
-            measureElsByEntry.get(entry).set(k, mEl);
-            // cells[] は 16 分粒度で持っているが描画は 8 分基準なので /2
-            renderedH += (m.cells.length / 2) * OUT_H8;
-            renderedCount++;
-          }
-        });
-        // 3px separators only sit BETWEEN measures (border-top on .measure +
-        // .measure). The last measure's own bottom border (if any) is the
-        // condition we want to check, so don't include it here.
-        renderedH += Math.max(0, renderedCount - 1) * 3;
-        // Content reaches column bottom → share the outer frame's bottom line
-        // instead of drawing a separate measure border-bottom.
-        if (renderedH >= COL_INNER_H) col.classList.add('last-touches-frame');
-        // 列の左右の縦罫線を CSS pseudo で「自分の内容の高さ分」だけ描くため、
-        // 内容高さを CSS 変数に渡す。
-        col.style.setProperty('--content-h', renderedH + 'px');
-      }
-      if (!col.firstChild) col.classList.add('empty');
+      measureIdxs.forEach(k => {
+        const m = entry.sheet.parts[0].measures[k];
+        if (m) {
+          const mEl = buildMeasureColumn(m, k, {
+            instrumentType: entry.sheet.instrumentType,
+            tunings: entry.sheet.tunings,
+            h8: OUT_H8,
+          });
+          col.appendChild(mEl);
+          if (!measureElsByEntry.has(entry)) measureElsByEntry.set(entry, new Map());
+          measureElsByEntry.get(entry).set(k, mEl);
+          renderedH += (m.cells.length / 2) * OUT_H8;
+          renderedCount++;
+        }
+      });
+      if (renderedCount > 0) renderedH += (renderedCount - 1) * 3;
+      if (renderedH >= COL_INNER_H) col.classList.add('last-touches-frame');
+      col.style.setProperty('--content-h', renderedH + 'px');
+      if (contentIdxs.length === 0) col.classList.add('empty');
       columns.push(col);
     });
   });
@@ -274,14 +267,15 @@ function renderDockedInto(container, entries) {
     const sysW = numMeasures * EDITOR_MEASURE_W;
 
     drawings.forEach((d, idx) => {
-      const fromRight = Math.max(0, sysW - (d.x || 0));
-      let mIdx = Math.floor(fromRight / EDITOR_MEASURE_W);
+      const clampedX = Math.max(0, Math.min(sysW - 1, d.x || 0));
+      const colFromLeft = Math.floor(clampedX / EDITOR_MEASURE_W);
+      let mIdx = numMeasures - 1 - colFromLeft;
       if (mIdx < 0) mIdx = 0;
       if (mIdx >= numMeasures) mIdx = numMeasures - 1;
       const mEl = measureEls.get(mIdx);
-      if (!mEl) return; // anchored measure not rendered (outside content range)
+      if (!mEl) return;
 
-      const measureLeft = sysW - (mIdx + 1) * EDITOR_MEASURE_W;
+      const measureLeft = colFromLeft * EDITOR_MEASURE_W;
       const localX = (d.x || 0) - measureLeft;
       const localY = (d.y || 0);
 
@@ -291,6 +285,9 @@ function renderDockedInto(container, entries) {
       });
       if (typeof d.length === 'number') {
         scaledD.length = Math.max(10, Math.round(d.length * SCALE));
+      }
+      if (d.type === 'text') {
+        scaledD.textFontSize = Math.max(6, Math.round(16 * SCALE));
       }
 
       if (typeof makeDrawingEl === 'function') {
