@@ -1,5 +1,112 @@
 /* App glue: wire UI events to state + parser + tuning + render. */
 
+/* ---- セル範囲選択 & クリップボード ------------------------------------ */
+let selRangeStart  = null;   // null | {measure, cell}
+let selRangeEnd    = null;   // null | {measure, cell}
+let cellClipboard  = null;   // null | [{...cell_data}]
+let _selDragActive = false;  // ドラッグ中に true → クリックハンドラがカーソル移動を抑制
+let _selMouseDown  = false;  // mousedown から mouseup の間 true
+
+function _selFlatIdx(measures, m, c) {
+  let f = 0;
+  for (let i = 0; i < m && i < measures.length; i++) f += measures[i].cells.length;
+  return f + c;
+}
+
+function getSelRange() {
+  if (!selRangeStart || !selRangeEnd) return null;
+  const ms = State.activeMeasures();
+  const si = _selFlatIdx(ms, selRangeStart.measure, selRangeStart.cell);
+  const ei = _selFlatIdx(ms, selRangeEnd.measure, selRangeEnd.cell);
+  return si <= ei
+    ? { m0: selRangeStart.measure, c0: selRangeStart.cell,
+        m1: selRangeEnd.measure,   c1: selRangeEnd.cell }
+    : { m0: selRangeEnd.measure,   c0: selRangeEnd.cell,
+        m1: selRangeStart.measure, c1: selRangeStart.cell };
+}
+
+function isCellInSelRange(mIdx, cIdx) {
+  const r = getSelRange();
+  if (!r) return false;
+  const ms = State.activeMeasures();
+  const fi = _selFlatIdx(ms, mIdx, cIdx);
+  return fi >= _selFlatIdx(ms, r.m0, r.c0) && fi <= _selFlatIdx(ms, r.m1, r.c1);
+}
+
+function clearSelection() {
+  selRangeStart = null;
+  selRangeEnd   = null;
+  _selDragActive = false;
+}
+
+// 選択範囲（なければカーソルセル1個）をクリップボードにコピー。
+// note.source を保持するのでペースト後に reconvertAll() で調弦を反映できる。
+function copySelectionCells() {
+  const r = getSelRange();
+  if (!r) {
+    const c = State.currentCell();
+    if (c) cellClipboard = [JSON.parse(JSON.stringify(c))];
+    return;
+  }
+  const ms = State.activeMeasures();
+  cellClipboard = [];
+  let m = r.m0, c = r.c0;
+  for (;;) {
+    const meas = ms[m];
+    if (!meas) break;
+    const copy = JSON.parse(JSON.stringify(meas.cells[c]));
+    delete copy.tuplet; // 連符グループは移植しない
+    cellClipboard.push(copy);
+    if (m === r.m1 && c === r.c1) break;
+    if (++c >= meas.cells.length) { c = 0; m++; }
+    if (m > r.m1) break;
+  }
+}
+
+// 選択範囲（なければカーソルセル1個）をカット。
+function cutSelectionCells() {
+  const r = getSelRange();
+  copySelectionCells();
+  History.push();
+  if (!r) {
+    State.clearCurrentCell();
+    refresh();
+    return;
+  }
+  const ms = State.activeMeasures();
+  let m = r.m0, c = r.c0;
+  for (;;) {
+    const meas = ms[m];
+    if (!meas) break;
+    Object.assign(meas.cells[c], newCell());
+    if (m === r.m1 && c === r.c1) break;
+    if (++c >= meas.cells.length) { c = 0; m++; }
+    if (m > r.m1) break;
+  }
+  clearSelection();
+  refresh();
+}
+
+// カーソル位置からクリップボード内容を上書きペースト。
+function pasteAtCursor() {
+  if (!cellClipboard || cellClipboard.length === 0) return;
+  History.push();
+  const ms = State.activeMeasures();
+  let m = State.cursor.measure;
+  let c = State.cursor.cell;
+  for (const cellData of cellClipboard) {
+    if (m >= ms.length) break;
+    const meas = ms[m];
+    if (!meas) break;
+    const copy = JSON.parse(JSON.stringify(cellData));
+    delete copy.tuplet;
+    Object.assign(meas.cells[c], copy);
+    if (++c >= meas.cells.length) { c = 0; m++; }
+  }
+  State.reconvertAll(); // 調弦変更を反映
+  refresh();
+}
+
 /* Write the parsed input into the current cell WITHOUT moving the cursor.
  * Returns a hint describing the natural advance for the Enter key:
  *   'beat' | 'half' | 'empty' | 'error' | 'done'
@@ -275,6 +382,83 @@ function parseTuningPitch(str) {
 
 document.addEventListener('DOMContentLoaded', () => {
   State.init();
+
+  // ---- セル範囲ドラッグ選択 (イベント委譲) ----
+  const scoreEl = document.getElementById('score');
+
+  scoreEl.addEventListener('mousedown', (e) => {
+    const el = e.target.closest('.cell');
+    if (!el || e.button !== 0) return;
+    _selMouseDown  = true;
+    _selDragActive = false;
+    const mIdx = parseInt(el.dataset.measure, 10);
+    const cIdx = parseInt(el.dataset.cell, 10);
+    selRangeStart = { measure: mIdx, cell: cIdx };
+    selRangeEnd   = { measure: mIdx, cell: cIdx };
+  });
+
+  scoreEl.addEventListener('mousemove', (e) => {
+    if (!_selMouseDown || e.buttons === 0) return;
+    const el = e.target.closest('.cell');
+    if (!el) return;
+    const mIdx = parseInt(el.dataset.measure, 10);
+    const cIdx = parseInt(el.dataset.cell, 10);
+    const prev = selRangeEnd;
+    if (!prev || prev.measure !== mIdx || prev.cell !== cIdx) {
+      _selDragActive = true;
+      selRangeEnd = { measure: mIdx, cell: cIdx };
+      refresh();
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    _selMouseDown = false;
+    // ドラッグ中でなかった (単クリック) なら選択解除。カーソル移動は click ハンドラが担う。
+    if (!_selDragActive) {
+      selRangeStart = null;
+      selRangeEnd   = null;
+    }
+    // _selDragActive は次の mousedown で false にリセットする
+  });
+
+  // ---- Ctrl+C / Ctrl+X / Ctrl+V / Ctrl+A ----
+  document.addEventListener('keydown', (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const ae = document.activeElement;
+    const inFilledInput = ae &&
+      (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA') && (ae.value || '') !== '';
+    const k = e.key.toLowerCase();
+
+    if (k === 'c') {
+      if (inFilledInput) return; // テキスト入力中はブラウザ標準コピー
+      e.preventDefault();
+      copySelectionCells();
+    } else if (k === 'x') {
+      if (inFilledInput) return;
+      e.preventDefault();
+      cutSelectionCells();
+    } else if (k === 'v') {
+      if (!cellClipboard) return;
+      if (inFilledInput) return;
+      e.preventDefault();
+      pasteAtCursor();
+    } else if (k === 'a') {
+      if (inFilledInput) return;
+      e.preventDefault();
+      const ms = State.activeMeasures();
+      if (ms.length === 0) return;
+      selRangeStart = { measure: 0, cell: 0 };
+      const lm = ms.length - 1;
+      selRangeEnd = { measure: lm, cell: ms[lm].cells.length - 1 };
+      refresh();
+    }
+  });
+
+  // Escape で選択解除
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (selRangeStart) { clearSelection(); refresh(); }
+  });
 
   const input = document.getElementById('cell-input');
   input.addEventListener('keydown', (e) => {

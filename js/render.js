@@ -89,6 +89,7 @@ function buildMeasureColumn(m, mIdx, opts) {
   const type = opts.instrumentType;
   const tunings = opts.tunings;
   const cursorHere = opts.isCursorCell || (() => false);
+  const selHere = opts.isSelCell || (() => false);
   const h8 = opts.h8 || H8;
   const h16 = h8 / 2;
 
@@ -145,9 +146,8 @@ function buildMeasureColumn(m, mIdx, opts) {
         cEl.dataset.tupletId = t.id;
         cEl.dataset.tupletN = t.n;
 
-        if (cursorHere(idx)) {
-          cEl.classList.add('active');
-        }
+        if (cursorHere(idx)) cEl.classList.add('active');
+        if (selHere(idx)) cEl.classList.add('sel-range');
 
         block.appendChild(cEl);
       }
@@ -184,11 +184,8 @@ function buildMeasureColumn(m, mIdx, opts) {
       sizeCell(a, h16);
       a.dataset.measure = mIdx;
       a.dataset.cell = i;
-
-      if (cursorHere(i)) {
-        a.classList.add('active');
-      }
-
+      if (cursorHere(i)) a.classList.add('active');
+      if (selHere(i)) a.classList.add('sel-range');
       mEl.appendChild(a);
 
       const b = renderCell(next || newCell(), type);
@@ -196,11 +193,8 @@ function buildMeasureColumn(m, mIdx, opts) {
       b.dataset.measure = mIdx;
       b.dataset.cell = i + 1;
       if (lineCls) b.classList.add(lineCls);
-
-      if (cursorHere(i + 1)) {
-        b.classList.add('active');
-      }
-
+      if (cursorHere(i + 1)) b.classList.add('active');
+      if (selHere(i + 1)) b.classList.add('sel-range');
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
@@ -208,11 +202,8 @@ function buildMeasureColumn(m, mIdx, opts) {
       a.dataset.measure = mIdx;
       a.dataset.cell = i;
       if (lineCls) a.classList.add(lineCls);
-
-      if (cursorHere(i)) {
-        a.classList.add('active');
-      }
-
+      if (cursorHere(i)) a.classList.add('active');
+      if (selHere(i)) a.classList.add('sel-range');
       mEl.appendChild(a);
     }
 
@@ -237,8 +228,9 @@ function renderScore(state) {
     const mEl = buildMeasureColumn(m, mIdx, {
       instrumentType: sheet.instrumentType,
       tunings: sheet.tunings,
-      isCursorCell: idx =>
-        state.cursor.measure === mIdx && state.cursor.cell === idx
+      isCursorCell: idx => state.cursor.measure === mIdx && state.cursor.cell === idx,
+      isSelCell: idx =>
+        typeof isCellInSelRange === 'function' && isCellInSelRange(mIdx, idx),
     });
 
     // 編集画面だけ小節番号を表示
@@ -260,14 +252,27 @@ function renderScore(state) {
   // 描画 (繰り返し記号など) を選択中だった場合は解除する。これをしないと
   // セル編集中に Backspace が描画削除へ飛んで消えてしまう。
   root.querySelectorAll('.cell').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
       const mIdx = parseInt(el.dataset.measure, 10);
       const cIdx = parseInt(el.dataset.cell, 10);
+
+      // ドラッグ選択が終わった直後のクリックはカーソル移動しない
+      if (typeof _selDragActive !== 'undefined' && _selDragActive) return;
 
       if (typeof selectedDrawingIdx !== 'undefined' && selectedDrawingIdx >= 0) {
         selectedDrawingIdx = -1;
         document.querySelectorAll('.drawing.selected').forEach(d => d.classList.remove('selected'));
       }
+
+      // Shift+Click: 選択範囲を延長（カーソルは動かさない）
+      if (e.shiftKey && typeof selRangeStart !== 'undefined' && selRangeStart) {
+        selRangeEnd = { measure: mIdx, cell: cIdx };
+        renderScore(State);
+        return;
+      }
+
+      // 通常クリック: 選択を解除してカーソル移動
+      if (typeof clearSelection === 'function') clearSelection();
 
       State.setCursor(mIdx, cIdx, 0);
       renderScore(State);
