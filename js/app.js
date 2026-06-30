@@ -41,26 +41,52 @@ function clearSelection() {
 
 // 選択範囲（なければカーソルセル1個）をクリップボードにコピー。
 // note.source を保持するのでペースト後に reconvertAll() で調弦を反映できる。
+// 描画は選択小節列内にあるものを、アンカー（m0左端）からの相対座標で保存する。
 function copySelectionCells() {
+  const MEASURE_W = 138;
   const r = getSelRange();
   if (!r) {
     const c = State.currentCell();
-    if (c) cellClipboard = [JSON.parse(JSON.stringify(c))];
+    if (c) {
+      cellClipboard = { cells: [JSON.parse(JSON.stringify(c))], drawings: [] };
+    }
     return;
   }
   const ms = State.activeMeasures();
-  cellClipboard = [];
+  const sysW = ms.length * MEASURE_W;
+  // 選択列のx範囲 (row-reverse: m1が左端, m0が右端)
+  const xLeft  = sysW - (r.m1 + 1) * MEASURE_W;
+  const xRight = sysW - r.m0 * MEASURE_W;
+  // アンカー = 選択開始セル(m0, c0)の左上
+  const anchorX = sysW - (r.m0 + 1) * MEASURE_W;
+  const anchorY = Math.floor(r.c0 / 2) * 46;
+
+  // セルコピー
+  const cells = [];
   let m = r.m0, c = r.c0;
   for (;;) {
     const meas = ms[m];
     if (!meas) break;
     const copy = JSON.parse(JSON.stringify(meas.cells[c]));
-    delete copy.tuplet; // 連符グループは移植しない
-    cellClipboard.push(copy);
+    delete copy.tuplet;
+    cells.push(copy);
     if (m === r.m1 && c === r.c1) break;
     if (++c >= meas.cells.length) { c = 0; m++; }
     if (m > r.m1) break;
   }
+
+  // 描画コピー: 選択x範囲に重なる描画を相対座標で保存
+  const drawings = [];
+  for (const d of (State.sheet.drawings || [])) {
+    if (d.x >= xLeft && d.x < xRight) {
+      const copy = JSON.parse(JSON.stringify(d));
+      copy._relX = d.x - anchorX;
+      copy._relY = d.y - anchorY;
+      drawings.push(copy);
+    }
+  }
+
+  cellClipboard = { cells, drawings };
 }
 
 // 選択範囲（なければカーソルセル1個）をカット。
@@ -89,12 +115,17 @@ function cutSelectionCells() {
 
 // カーソル位置からクリップボード内容を上書きペースト。
 function pasteAtCursor() {
-  if (!cellClipboard || cellClipboard.length === 0) return;
+  if (!cellClipboard) return;
+  const clipCells = cellClipboard.cells || [];
+  if (clipCells.length === 0 && (!cellClipboard.drawings || cellClipboard.drawings.length === 0)) return;
   History.push();
+  const MEASURE_W = 138;
   const ms = State.activeMeasures();
+
+  // セルペースト
   let m = State.cursor.measure;
   let c = State.cursor.cell;
-  for (const cellData of cellClipboard) {
+  for (const cellData of clipCells) {
     if (m >= ms.length) break;
     const meas = ms[m];
     if (!meas) break;
@@ -103,7 +134,22 @@ function pasteAtCursor() {
     Object.assign(meas.cells[c], copy);
     if (++c >= meas.cells.length) { c = 0; m++; }
   }
-  State.reconvertAll(); // 調弦変更を反映
+
+  // 描画ペースト: カーソルセル左上を新アンカーにして絶対座標に戻す
+  const sysW = ms.length * MEASURE_W;
+  const pasteAnchorX = sysW - (State.cursor.measure + 1) * MEASURE_W;
+  const pasteAnchorY = Math.floor(State.cursor.cell / 2) * 46;
+  for (const d of (cellClipboard.drawings || [])) {
+    const copy = JSON.parse(JSON.stringify(d));
+    copy.x = pasteAnchorX + d._relX;
+    copy.y = pasteAnchorY + d._relY;
+    delete copy._relX;
+    delete copy._relY;
+    if (!State.sheet.drawings) State.sheet.drawings = [];
+    State.sheet.drawings.push(copy);
+  }
+
+  State.reconvertAll();
   refresh();
 }
 
@@ -438,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       cutSelectionCells();
     } else if (k === 'v') {
-      if (!cellClipboard) return;
+      if (!cellClipboard || (!cellClipboard.cells && !cellClipboard.drawings)) return;
       if (inFilledInput) return;
       e.preventDefault();
       pasteAtCursor();
