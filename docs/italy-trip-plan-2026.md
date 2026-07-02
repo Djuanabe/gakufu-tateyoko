@@ -1,6 +1,6 @@
 # イタリア3泊旅行プラン（2026年・関西発着 / ローマin・ベネツィアout）
 
-> 他のバージョン: [4泊版（フィレンツェ1泊）](./italy-trip-plan-2026-4nights.md) / [6泊8日版（3都市周遊）](./italy-trip-plan-2026-6nights.md)
+> 他のバージョン: [4泊版（フィレンツェ1泊）](./italy-trip-plan-2026-4nights.md) / [6泊8日版（3都市周遊）](./italy-trip-plan-2026-6nights.md) / [航空券価格の詳細比較](./italy-flight-price-comparison-2026.md)
 
 - **旅行可能期間**: 2026年8月24日（月）〜9月15日（火）
 - **滞在**: イタリア3泊（機中泊を含め5〜6日間）
