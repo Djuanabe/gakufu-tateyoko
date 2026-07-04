@@ -172,6 +172,9 @@ const BEATS_PER_COL = 16;
 const COLS_PER_AREA = 8;
 const COLS_PER_PAGE = COLS_PER_AREA * 2;
 const OUT_H8 = 25;   // eighth-cell height for output (16 beats fit a B4 column)
+// Column inner height needed to decide whether content fills column up to
+// the outer frame. Must match .dock-col height in CSS.
+const COL_INNER_H = 809;
 
 function beatsOfMeasure(m) {
   return m ? (m.timeSignature.num * 4 / m.timeSignature.den) : 4;
@@ -205,9 +208,6 @@ function renderDockedInto(container, entries) {
   // entry -> Map<measureIdx, .measure element> — used to anchor drawings into
   // the same measure they sat over in the editor.
   const measureElsByEntry = new Map();
-  // Column inner height needed to decide whether content fills column up to
-  // the outer frame. Must match .dock-col height in CSS.
-  const COL_INNER_H = 809;
   blocks.forEach(measureIdxs => {
     entries.forEach((entry, instIdx) => {
       const col = document.createElement('div');

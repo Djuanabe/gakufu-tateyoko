@@ -30,6 +30,26 @@ function sizeCell(el, h) {
   el.style.fontSize = h * FONT_FILL + 'px';
 }
 
+// Quarter-beat (16th) cells hold content that is drawn at half-beat (8th)
+// width, then vertically squeezed to fit the shorter cell. Rendering the
+// glyph directly at the cell's own (halved) font size would shrink it in
+// both directions; instead we render at full (h8) size inside a wrapper and
+// scale that wrapper down vertically, so nothing gets clipped by the cell's
+// `overflow: hidden`.
+function compressQuarterCell(cellEl, h8) {
+  const wrap = document.createElement('div');
+  wrap.className = 'quarter-compress';
+  while (cellEl.firstChild) wrap.appendChild(cellEl.firstChild);
+  wrap.style.fontSize = h8 * FONT_FILL + 'px';
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'row';
+  wrap.style.alignItems = 'center';
+  wrap.style.justifyContent = 'center';
+  wrap.style.transform = 'scaleY(0.5)';
+  wrap.style.transformOrigin = '50% 50%';
+  cellEl.appendChild(wrap);
+}
+
 function cellHasContent(c) {
   return !!(
     c &&
@@ -184,7 +204,6 @@ function buildMeasureColumn(m, mIdx, opts) {
     if (subdivided) {
       const a = renderCell(cell, type);
       a.style.height = h16 + 'px';
-      a.style.fontSize = h8 * FONT_FILL + 'px';
       a.style.display = 'flex';
       a.style.alignItems = 'center';
       a.style.justifyContent = 'center';
@@ -192,11 +211,11 @@ function buildMeasureColumn(m, mIdx, opts) {
       a.dataset.cell = i;
       if (cursorHere(i)) a.classList.add('active');
       if (selHere(i)) a.classList.add('sel-range');
+      compressQuarterCell(a, h8);
       mEl.appendChild(a);
 
       const b = renderCell(next || newCell(), type);
       b.style.height = h16 + 'px';
-      b.style.fontSize = h8 * FONT_FILL + 'px';
       b.style.display = 'flex';
       b.style.alignItems = 'center';
       b.style.justifyContent = 'center';
@@ -205,6 +224,7 @@ function buildMeasureColumn(m, mIdx, opts) {
       if (lineCls) b.classList.add(lineCls);
       if (cursorHere(i + 1)) b.classList.add('active');
       if (selHere(i + 1)) b.classList.add('sel-range');
+      compressQuarterCell(b, h8);
       mEl.appendChild(b);
     } else {
       const a = renderCell(cell, type);
